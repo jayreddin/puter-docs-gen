@@ -13,7 +13,7 @@ import {
   Minimize2,
   Maximize2,
   FileText,
-  Compress,
+  Shrink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GeneratedContent as GeneratedContentType } from "@/types";
@@ -195,7 +195,7 @@ export function GeneratedContent({
               size="sm"
               className="flex-1 min-w-[120px]"
             >
-              <Compress className="w-4 h-4 mr-2" />
+              <Shrink className="w-4 h-4 mr-2" />
               {isCondensing
                 ? "Condensing..."
                 : isCondensed
