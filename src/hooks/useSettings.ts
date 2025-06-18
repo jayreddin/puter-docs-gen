@@ -4,10 +4,13 @@ import { storage } from "@/lib/storage";
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "",
-  selectedModel: "gemini-1.5-flash",
+  selectedModel: "gpt-4o-mini",
+  selectedService: "puter",
   theme: "system",
   isApiKeyValid: false,
+  isPuterConnected: false,
   availableModels: [],
+  availablePuterModels: [],
 };
 
 export function useSettings() {

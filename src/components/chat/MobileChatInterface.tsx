@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatMessage, ChatState } from "@/types";
-import { useGemini } from "@/hooks/useGemini";
+import { useAI } from "@/hooks/useAI";
 import { useFileHandler } from "@/hooks/useFileHandler";
 import { useSettings } from "@/hooks/useSettings";
 import { MessageBubble } from "./MessageBubble";
@@ -53,7 +53,7 @@ export function MobileChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const gemini = useGemini();
+  const ai = useAI();
   const fileHandler = useFileHandler();
   const settings = useSettings();
 
@@ -117,7 +117,7 @@ Once you provide this information, you can start uploading files, pasting conten
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !gemini.isReady) return;
+    if (!inputMessage.trim() || !ai.isReady) return;
 
     const userMessage = inputMessage.trim();
     setInputMessage("");
@@ -171,7 +171,7 @@ Once you provide this information, you can start uploading files, pasting conten
         context += `\nFiles: ${fileHandler.files.map((f) => f.name).join(", ")}`;
       }
 
-      const response = await gemini.handleUserMessage(userMessage, context);
+      const response = await ai.handleUserMessage(userMessage, context);
 
       // Remove loading message and add actual response
       setChatState((prev) => ({
@@ -200,13 +200,13 @@ Once you provide this information, you can start uploading files, pasting conten
   };
 
   const handleGenerateDocument = async () => {
-    if (!gemini.isReady || fileHandler.files.length === 0) return;
+    if (!ai.isReady || fileHandler.files.length === 0) return;
 
     setChatState((prev) => ({ ...prev, isProcessing: true }));
 
     try {
       const filesForCompilation = fileHandler.getFilesForCompilation();
-      const content = await gemini.processFiles(
+      const content = await ai.processFiles(
         filesForCompilation,
         chatState.documentName || "Compiled Document",
       );
@@ -250,7 +250,7 @@ Once you provide this information, you can start uploading files, pasting conten
   };
 
   const canGenerate =
-    gemini.isReady &&
+    ai.isReady &&
     fileHandler.files.length > 0 &&
     fileHandler.files.length >= chatState.expectedFileCount &&
     chatState.documentName;
@@ -274,13 +274,13 @@ Once you provide this information, you can start uploading files, pasting conten
             <h1 className="text-lg font-semibold gradient-text">
               AI Chat Docs
             </h1>
-            <div className="text-xs text-muted-foreground">
-              {chatState.documentName && (
-                <span>{chatState.documentName} • </span>
+            <div
+              className={cn(
+                "mt-1",
+                ai.isReady ? "text-status-success" : "text-status-warning",
               )}
-              {fileHandler.files.length} files •{" "}
-              <span
-                className={
+            >
+              {ai.isReady ? "AI Ready" : "Configure AI Service"}
                   gemini.isReady ? "text-status-success" : "text-status-warning"
                 }
               >
@@ -368,7 +368,7 @@ Once you provide this information, you can start uploading files, pasting conten
           {chatState.generatedContent && (
             <GeneratedContent
               content={chatState.generatedContent}
-              onCondense={gemini.condenseContent}
+              onCondense={ai.condenseContent}
               documentName={chatState.documentName}
             />
           )}
@@ -400,21 +400,21 @@ Once you provide this information, you can start uploading files, pasting conten
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={
-              !gemini.isReady
-                ? "Configure API key in settings first..."
-                : chatState.currentStep === "initial"
-                  ? "Tell me the document name and number of files..."
-                  : "Type your message..."
-            }
-            disabled={!gemini.isReady || gemini.isLoading}
+                placeholder={
+                  !ai.isReady
+                    ? "Configure AI service in settings first..."
+                    : chatState.currentStep === "initial"
+                      ? "Tell me the document name and number of files..."
+                      : "Type your message..."
+                }
+                disabled={!ai.isReady || ai.isLoading}
             className="flex-1 h-12"
           />
           <Button
             onClick={handleSendMessage}
-            disabled={
-              !inputMessage.trim() || !gemini.isReady || gemini.isLoading
-            }
+              disabled={
+                !inputMessage.trim() || !ai.isReady || ai.isLoading
+              }
             size="icon"
             className="h-12 w-12"
           >
@@ -422,11 +422,11 @@ Once you provide this information, you can start uploading files, pasting conten
           </Button>
         </div>
 
-        {(gemini.error || fileHandler.error) && (
-          <div className="mt-2 text-sm text-status-error">
-            {gemini.error || fileHandler.error}
-          </div>
-        )}
+            {(ai.error || fileHandler.error) && (
+              <div className="mt-2 text-sm text-status-error">
+                {ai.error || fileHandler.error}
+              </div>
+            )}
       </div>
     </div>
   );
@@ -543,7 +543,7 @@ Once you provide this information, you can start uploading files, pasting conten
         onUpdateSetting={settings.updateSetting}
         onResetSettings={settings.resetSettings}
         onToggleTheme={settings.toggleTheme}
-        gemini={gemini}
+        ai={ai}
       />
     </div>
   );

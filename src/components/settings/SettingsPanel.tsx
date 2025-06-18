@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppSettings } from "@/types";
-import { useGemini } from "@/hooks/useGemini";
+import { useAI } from "@/hooks/useAI";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -54,7 +54,7 @@ interface SettingsPanelProps {
   ) => void;
   onResetSettings: () => void;
   onToggleTheme: () => void;
-  gemini: ReturnType<typeof useGemini>;
+  ai: ReturnType<typeof useAI>;
 }
 
 export function SettingsPanel({
@@ -64,7 +64,7 @@ export function SettingsPanel({
   onUpdateSetting,
   onResetSettings,
   onToggleTheme,
-  gemini,
+  ai,
 }: SettingsPanelProps) {
   const [apiKey, setApiKey] = useState(settings.apiKey || "");
   const [isTestingKey, setIsTestingKey] = useState(false);
@@ -79,8 +79,8 @@ export function SettingsPanel({
 
     setIsTestingKey(true);
     try {
-      await gemini.setApiKey(apiKey);
-      if (gemini.isReady) {
+      await ai.setApiKey(apiKey);
+      if (ai.isGeminiReady) {
         onUpdateSetting("apiKey", apiKey);
         onUpdateSetting("isApiKeyValid", true);
         toast.success("API key is valid and saved!");
@@ -94,14 +94,31 @@ export function SettingsPanel({
     }
   };
 
+  const handlePuterConnect = async () => {
+    setIsTestingKey(true);
+    try {
+      await ai.connectToPuter();
+      if (ai.isPuterReady) {
+        onUpdateSetting("isPuterConnected", true);
+        toast.success("Connected to Puter successfully!");
+      } else {
+        toast.error("Failed to connect to Puter");
+      }
+    } catch (error) {
+      toast.error("Failed to connect to Puter");
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
+
   const handleRefreshModels = async () => {
-    if (!gemini.isReady) {
-      toast.error("Please set a valid API key first");
+    if (!ai.isReady) {
+      toast.error("Please configure your AI service first");
       return;
     }
 
     try {
-      await gemini.refreshModels();
+      await ai.refreshModels();
       toast.success("Models refreshed successfully!");
     } catch (error) {
       toast.error("Failed to refresh models");
@@ -109,9 +126,17 @@ export function SettingsPanel({
   };
 
   const handleModelChange = (modelName: string) => {
-    gemini.switchModel(modelName);
+    ai.switchModel(modelName);
     onUpdateSetting("selectedModel", modelName);
     toast.success(`Switched to ${modelName}`);
+  };
+
+  const handleServiceChange = (service: "gemini" | "puter") => {
+    ai.switchService(service);
+    onUpdateSetting("selectedService", service);
+    toast.success(
+      `Switched to ${service === "gemini" ? "Google Gemini" : "Puter AI"}`,
+    );
   };
 
   const handleThemeChange = (theme: "light" | "dark" | "system") => {
@@ -205,77 +230,169 @@ export function SettingsPanel({
 
           <ScrollArea className="h-[60vh] mt-4">
             <TabsContent value="api" className="space-y-6">
-              {/* API Key Section */}
+              {/* AI Service Selection */}
               <Card className="p-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4" />
-                    <h3 className="font-medium">Google Gemini API Key</h3>
-                    {settings.isApiKeyValid && (
-                      <Badge variant="outline" className="text-status-success">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Valid
-                      </Badge>
-                    )}
+                    <RefreshCw className="w-4 h-4" />
+                    <h3 className="font-medium">AI Service</h3>
                   </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="apiKey">API Key</Label>
-                      <div className="flex gap-2 mt-1">
-                        <div className="relative flex-1">
-                          <Input
-                            id="apiKey"
-                            type={showApiKey ? "text" : "password"}
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="Enter your Gemini API key..."
-                            className="pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3"
-                            onClick={() => setShowApiKey(!showApiKey)}
-                          >
-                            {showApiKey ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                        <Button
-                          onClick={handleApiKeyTest}
-                          disabled={!apiKey.trim() || isTestingKey}
-                        >
-                          {isTestingKey ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Test & Save"
-                          )}
-                        </Button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant={
+                        settings.selectedService === "gemini"
+                          ? "default"
+                          : "outline"
+                      }
+                      className="flex flex-col gap-2 h-auto py-4"
+                      onClick={() => handleServiceChange("gemini")}
+                    >
+                      <div className="font-medium">Google Gemini</div>
+                      <div className="text-xs text-muted-foreground">
+                        Requires API key
                       </div>
-                    </div>
+                    </Button>
 
-                    <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
-                      <p>
-                        Get your API key from{" "}
-                        <a
-                          href="https://makersuite.google.com/app/apikey"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-chat-primary hover:underline"
-                        >
-                          Google AI Studio
-                        </a>
-                        . Your key is stored locally and never shared.
-                      </p>
-                    </div>
+                    <Button
+                      variant={
+                        settings.selectedService === "puter"
+                          ? "default"
+                          : "outline"
+                      }
+                      className="flex flex-col gap-2 h-auto py-4"
+                      onClick={() => handleServiceChange("puter")}
+                    >
+                      <div className="font-medium">Puter AI</div>
+                      <div className="text-xs text-muted-foreground">
+                        Free with account
+                      </div>
+                    </Button>
                   </div>
                 </div>
               </Card>
+
+              {/* API Key Section - Only show for Gemini */}
+              {settings.selectedService === "gemini" && (
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4" />
+                      <h3 className="font-medium">Google Gemini API Key</h3>
+                      {settings.isApiKeyValid && (
+                        <Badge
+                          variant="outline"
+                          className="text-status-success"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Valid
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="apiKey">API Key</Label>
+                        <div className="flex gap-2 mt-1">
+                          <div className="relative flex-1">
+                            <Input
+                              id="apiKey"
+                              type={showApiKey ? "text" : "password"}
+                              value={apiKey}
+                              onChange={(e) => setApiKey(e.target.value)}
+                              placeholder="Enter your Gemini API key..."
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                            >
+                              {showApiKey ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                          <Button
+                            onClick={handleApiKeyTest}
+                            disabled={!apiKey.trim() || isTestingKey}
+                          >
+                            {isTestingKey ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "Test & Save"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                        <p>
+                          Get your API key from{" "}
+                          <a
+                            href="https://makersuite.google.com/app/apikey"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-chat-primary hover:underline"
+                          >
+                            Google AI Studio
+                          </a>
+                          . Your key is stored locally and never shared.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Puter Connection Section - Only show for Puter */}
+              {settings.selectedService === "puter" && (
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4" />
+                      <h3 className="font-medium">Puter AI Connection</h3>
+                      {settings.isPuterConnected && (
+                        <Badge
+                          variant="outline"
+                          className="text-status-success"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Connected
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handlePuterConnect}
+                        disabled={isTestingKey}
+                        className="w-full"
+                      >
+                        {isTestingKey ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : settings.isPuterConnected ? (
+                          "Reconnect to Puter"
+                        ) : (
+                          "Connect to Puter"
+                        )}
+                      </Button>
+
+                      <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                        <p>
+                          Puter AI provides free access to multiple AI models
+                          including GPT-4o, Claude, and more. You'll need to
+                          sign in with your Puter account to use these services.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Model Selection */}
               <Card className="p-4">
@@ -289,9 +406,9 @@ export function SettingsPanel({
                       variant="outline"
                       size="sm"
                       onClick={handleRefreshModels}
-                      disabled={!gemini.isReady || gemini.isLoading}
+                      disabled={!ai.isReady || ai.isLoading}
                     >
-                      {gemini.isLoading ? (
+                      {ai.isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <RefreshCw className="w-4 h-4" />
@@ -305,26 +422,31 @@ export function SettingsPanel({
                     <Select
                       value={settings.selectedModel}
                       onValueChange={handleModelChange}
-                      disabled={!gemini.isReady}
+                      disabled={!ai.isReady}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select a model" />
                       </SelectTrigger>
                       <SelectContent>
-                        {gemini.availableModels.map((model) => (
-                          <SelectItem key={model.name} value={model.name}>
-                            <div>
-                              <div className="font-medium">
-                                {model.displayName}
-                              </div>
-                              {model.description && (
-                                <div className="text-xs text-muted-foreground">
-                                  {model.description}
+                        {ai
+                          .getAvailableModelsForCurrentService()
+                          .map((model) => (
+                            <SelectItem key={model.name} value={model.name}>
+                              <div>
+                                <div className="font-medium">
+                                  {model.displayName}
                                 </div>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
+                                {model.description && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {model.description}
+                                    {"provider" in model &&
+                                      model.provider &&
+                                      ` • ${model.provider}`}
+                                  </div>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

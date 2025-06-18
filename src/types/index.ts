@@ -23,12 +23,22 @@ export interface GeminiModel {
   description?: string;
 }
 
+export interface PuterModel {
+  name: string;
+  displayName: string;
+  description?: string;
+  provider?: string;
+}
+
 export interface AppSettings {
   apiKey: string;
   selectedModel: string;
+  selectedService: "gemini" | "puter";
   theme: "light" | "dark" | "system";
   isApiKeyValid: boolean;
+  isPuterConnected: boolean;
   availableModels: GeminiModel[];
+  availablePuterModels: PuterModel[];
 }
 
 export interface GeneratedContent {
