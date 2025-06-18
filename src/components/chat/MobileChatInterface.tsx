@@ -271,29 +271,30 @@ Once you provide this information, you can start uploading files, pasting conten
             </Button>
           )}
           <div>
-            <h1 className="text-lg font-semibold gradient-text">
-              AI Chat Docs
-            </h1>
-            <div
-              className={cn(
-                "mt-1",
-                ai.isReady ? "text-status-success" : "text-status-warning",
+            <div className="text-xs text-muted-foreground">
+              {chatState.documentName && (
+                <span>{chatState.documentName} • </span>
               )}
-            >
-              {ai.isReady ? "AI Ready" : "Configure AI Service"}
-            </div>
+              {fileHandler.files.length} files •{" "}
+              <span
+                className={
+                  ai.isReady ? "text-status-success" : "text-status-warning"
+                }
+              >
+                {ai.isReady ? "AI Ready" : "Configure AI Service"}
+              </span>
             </div>
           </div>
-        </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSettings(true)}
-          className="p-2"
-        >
-          <Settings className="w-5 h-5" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+            className="p-2"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -396,21 +397,19 @@ Once you provide this information, you can start uploading files, pasting conten
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-                placeholder={
-                  !ai.isReady
-                    ? "Configure AI service in settings first..."
-                    : chatState.currentStep === "initial"
-                      ? "Tell me the document name and number of files..."
-                      : "Type your message..."
-                }
-                disabled={!ai.isReady || ai.isLoading}
+            placeholder={
+              !ai.isReady
+                ? "Configure AI service in settings first..."
+                : chatState.currentStep === "initial"
+                  ? "Tell me the document name and number of files..."
+                  : "Type your message..."
+            }
+            disabled={!ai.isReady || ai.isLoading}
             className="flex-1 h-12"
           />
           <Button
             onClick={handleSendMessage}
-              disabled={
-                !inputMessage.trim() || !ai.isReady || ai.isLoading
-              }
+            disabled={!inputMessage.trim() || !ai.isReady || ai.isLoading}
             size="icon"
             className="h-12 w-12"
           >
@@ -418,11 +417,11 @@ Once you provide this information, you can start uploading files, pasting conten
           </Button>
         </div>
 
-            {(ai.error || fileHandler.error) && (
-              <div className="mt-2 text-sm text-status-error">
-                {ai.error || fileHandler.error}
-              </div>
-            )}
+        {(ai.error || fileHandler.error) && (
+          <div className="mt-2 text-sm text-status-error">
+            {ai.error || fileHandler.error}
+          </div>
+        )}
       </div>
     </div>
   );
