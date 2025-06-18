@@ -97,36 +97,76 @@ export function useAI() {
     setError(null);
 
     try {
-      if (!puterService.isAvailable()) {
-        throw new Error("Puter service not available. Please reload the page.");
+      console.log("Starting Puter connection process...");
+
+      // Wait for Puter to fully load
+      const puterLoaded = await puterService.waitForPuter();
+      if (!puterLoaded) {
+        throw new Error(
+          "Puter SDK failed to load. Please reload the page and try again.",
+        );
       }
+
+      if (!puterService.isAvailable()) {
+        console.error("Puter service not available");
+        throw new Error(
+          "Puter service not available. Please reload the page to load Puter SDK.",
+        );
+      }
+
+      console.log("Puter service is available, checking sign-in status...");
 
       // Check if user is signed in
       const isSignedIn = await puterService.isSignedIn();
+      console.log("Puter sign-in status:", isSignedIn);
 
       if (!isSignedIn) {
+        console.log("User not signed in, attempting to sign in...");
         // Try to sign in
         await puterService.signIn();
+        console.log("Sign-in completed");
       }
+
+      console.log("Testing Puter connection...");
 
       // Test connection
       const isConnected = await puterService.testConnection();
+      console.log("Connection test result:", isConnected);
 
       if (isConnected) {
         setIsPuterReady(true);
         await loadPuterModels();
         storage.saveSettings({ isPuterConnected: true });
+        console.log("Puter connection successful");
       } else {
         setIsPuterReady(false);
-        setError("Failed to connect to Puter services.");
+        setError(
+          "Failed to connect to Puter AI services. The service may be temporarily unavailable.",
+        );
         storage.saveSettings({ isPuterConnected: false });
       }
     } catch (err) {
       setIsPuterReady(false);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to connect to Puter";
+      console.error("Puter connection error details:");
+      console.error("Error type:", typeof err);
+      console.error(
+        "Error message:",
+        err instanceof Error ? err.message : "Unknown error",
+      );
+      console.error("Full error:", err);
+
+      let errorMessage = "Failed to connect to Puter";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      } else if (err && typeof err === "object" && "message" in err) {
+        errorMessage = String(err.message);
+      }
+
       setError(errorMessage);
-      console.error("Puter connection error:", err);
+      storage.saveSettings({ isPuterConnected: false });
     } finally {
       setIsLoading(false);
     }
@@ -200,6 +240,12 @@ export function useAI() {
         if (selectedService === "gemini") {
           response = await geminiService.generateResponse(prompt);
         } else {
+          // Ensure Puter is ready before making the request
+          if (!puterService.isAvailable()) {
+            throw new Error(
+              "Puter service not available. Please connect to Puter first.",
+            );
+          }
           response = await puterService.generateResponse(prompt, {
             model: currentModel,
           });
