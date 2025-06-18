@@ -192,4 +192,26 @@
     min-height: 100vh;
     min-height: 100svh;
   }
+
+  /* Mobile bottom navigation safe area */
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile header safe area */
+  .mobile-header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Prevent bounce scrolling on iOS */
+  .mobile-fixed {
+    position: fixed;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile input focus optimizations */
+  .mobile-input-focus {
+    transform: none !important;
+    zoom: 1 !important;
+  }
 }
