@@ -281,11 +281,7 @@ Once you provide this information, you can start uploading files, pasting conten
               )}
             >
               {ai.isReady ? "AI Ready" : "Configure AI Service"}
-                  gemini.isReady ? "text-status-success" : "text-status-warning"
-                }
-              >
-                {gemini.isReady ? "AI Ready" : "Configure API"}
-              </span>
+            </div>
             </div>
           </div>
         </div>
