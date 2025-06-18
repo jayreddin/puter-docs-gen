@@ -215,3 +215,95 @@
     zoom: 1 !important;
   }
 }
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Ensure touch targets are large enough */
+  button,
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent zoom on input focus on iOS */
+  input[type="text"],
+  input[type="url"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Mobile chat interface optimizations */
+  .mobile-chat-container {
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  /* Mobile message bubbles */
+  .message-user {
+    max-width: 85% !important;
+    margin-left: auto;
+  }
+
+  .message-ai {
+    max-width: 90% !important;
+    margin-right: auto;
+  }
+
+  /* Mobile file upload area */
+  .mobile-upload-area {
+    padding: 2rem 1rem;
+    min-height: 200px;
+  }
+
+  /* Mobile bottom navigation */
+  .mobile-bottom-nav {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Touch-friendly spacing */
+  .mobile-touch-spacing {
+    padding: 12px 16px;
+  }
+
+  /* Mobile keyboard handling */
+  .mobile-keyboard-adjust {
+    height: calc(100vh - env(keyboard-inset-height, 0px));
+    height: calc(100svh - env(keyboard-inset-height, 0px));
+  }
+
+  /* Mobile animations */
+  .mobile-slide-up {
+    animation: mobileSlideUp 0.3s ease-out;
+  }
+
+  @keyframes mobileSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Mobile scrolling optimizations */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Hide scrollbars on mobile */
+  .mobile-no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
