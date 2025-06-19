@@ -339,6 +339,17 @@ Once you provide this information, you can start uploading files, pasting conten
             </Button>
           )}
 
+          <Button
+            onClick={() => setShowAITools(!showAITools)}
+            variant={showAITools ? "default" : "outline"}
+            size="sm"
+            className="w-full justify-start"
+            disabled={fileHandler.files.length === 0}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            AI Tools
+          </Button>
+
           {fileHandler.files.length > 0 && (
             <Button
               onClick={fileHandler.clearAllFiles}
