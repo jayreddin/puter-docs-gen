@@ -23,29 +23,55 @@ interface PuterAuthPromptProps {
 export function PuterAuthPrompt({ onSuccess, onCancel }: PuterAuthPromptProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [connectionQuality, setConnectionQuality] = useState<
+    "excellent" | "good" | "poor" | "disconnected"
+  >("disconnected");
 
   const handleSignIn = async () => {
     setIsLoading(true);
+    setProgress(0);
     setAuthStatus("Initiating sign-in...");
 
     try {
-      // First check if already signed in
+      // Step 1: Check if already signed in
+      setProgress(20);
       const alreadySignedIn = await puterService.isSignedIn();
       if (alreadySignedIn) {
+        setProgress(100);
         setAuthStatus("Already signed in!");
+
+        // Get auth status for connection quality
+        const status = await puterService.getAuthStatus();
+        setConnectionQuality(status.connectionQuality);
+
+        toast.success("Already authenticated with Puter!");
         onSuccess();
         return;
       }
 
+      // Step 2: Initiate sign-in
+      setProgress(40);
       setAuthStatus("Opening sign-in window...");
       await puterService.signIn();
 
+      // Step 3: Verify authentication
+      setProgress(70);
       setAuthStatus("Verifying authentication...");
       const isSignedIn = await puterService.isSignedIn();
 
       if (isSignedIn) {
+        // Step 4: Get connection status
+        setProgress(90);
+        setAuthStatus("Checking connection quality...");
+        const status = await puterService.getAuthStatus();
+        setConnectionQuality(status.connectionQuality);
+
+        setProgress(100);
         setAuthStatus("Authentication successful!");
-        toast.success("Successfully signed in to Puter!");
+        toast.success(
+          `Successfully signed in to Puter! Connection: ${status.connectionQuality}`,
+        );
         onSuccess();
       } else {
         throw new Error("Sign-in completed but verification failed");
@@ -55,6 +81,7 @@ export function PuterAuthPrompt({ onSuccess, onCancel }: PuterAuthPromptProps) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to sign in to Puter";
       setAuthStatus(`Error: ${errorMessage}`);
+      setProgress(0);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
