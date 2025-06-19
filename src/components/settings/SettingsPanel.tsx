@@ -199,14 +199,36 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
   const handlePuterConnect = async () => {
     try {
+      setIsTestingKey(true); // Reuse loading state
       await ai.connectToPuter();
       const status = await ai.getPuterAuthStatus();
       setPuterAuthStatus(status);
       toast.success("Connected to Puter successfully!");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to connect to Puter",
-      );
+      console.error("Puter connection failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect to Puter";
+
+      // Provide more helpful error messages
+      if (
+        errorMessage.includes("Sign-in was attempted but verification failed")
+      ) {
+        toast.error(
+          "Sign-in failed. Please try closing any pop-ups and try again.",
+        );
+      } else if (errorMessage.includes("User not signed in")) {
+        toast.error(
+          "Please complete the sign-in process in the pop-up window.",
+        );
+      } else if (errorMessage.includes("SDK failed to load")) {
+        toast.error(
+          "Puter service unavailable. Please check your internet connection and refresh the page.",
+        );
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsTestingKey(false);
     }
   };
 
