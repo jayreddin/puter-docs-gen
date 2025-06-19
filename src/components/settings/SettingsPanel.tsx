@@ -538,15 +538,17 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         </p>
                         <Button
                           onClick={handlePuterConnect}
-                          disabled={ai.isLoading}
-                          className="w-full flex items-center gap-2"
+                          disabled={ai.isLoading || isTestingKey}
+                          className="w-full flex items-center gap-2 touch-manipulation h-10"
                         >
-                          {ai.isLoading ? (
+                          {ai.isLoading || isTestingKey ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Shield className="w-4 h-4" />
                           )}
-                          Connect to Puter
+                          {ai.isLoading || isTestingKey
+                            ? "Connecting..."
+                            : "Connect to Puter"}
                         </Button>
                       </div>
                     ) : (
