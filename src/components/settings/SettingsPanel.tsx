@@ -75,7 +75,7 @@ export function SettingsPanel({
   onUpdateSetting,
   onResetSettings,
   onToggleTheme,
-  ai: externalAI
+  ai: externalAI,
 }: SettingsPanelProps) {
   const hookAI = useAI();
   const hookSettings = useSettings();
@@ -105,7 +105,9 @@ export function SettingsPanel({
       preserveFormatting: true,
     },
   );
-  const [pendingService, setPendingService] = useState<"gemini" | "puter">(ai.selectedService);
+  const [pendingService, setPendingService] = useState<"gemini" | "puter">(
+    ai.selectedService,
+  );
   const [pendingModel, setPendingModel] = useState(ai.currentModel);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -120,10 +122,10 @@ export function SettingsPanel({
       }
     };
 
-    if (ai.selectedService === "puter") {
+    if (pendingService === "puter") {
       loadAuthStatus();
     }
-  }, [ai.selectedService]);
+  }, [pendingService, ai]);
 
   const handleApiKeyTest = async () => {
     if (!apiKey.trim()) {
@@ -182,7 +184,9 @@ export function SettingsPanel({
       updateSetting("processingPreferences", processingPrefs);
 
       setHasUnsavedChanges(false);
-      toast.success(`Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`);
+      toast.success(
+        `Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`,
+      );
     } catch (error) {
       toast.error("Failed to save settings");
       console.error("Save settings error:", error);
@@ -192,14 +196,16 @@ export function SettingsPanel({
   const handleDiscardChanges = () => {
     setPendingService(ai.selectedService);
     setPendingModel(ai.currentModel);
-    setProcessingPrefs(settings.processingPreferences || {
-      autoExtractText: true,
-      autoAnalyzeFiles: true,
-      combinationStrategy: "smart",
-      outputFormat: "markdown",
-      includeMetadata: true,
-      preserveFormatting: true,
-    });
+    setProcessingPrefs(
+      settings.processingPreferences || {
+        autoExtractText: true,
+        autoAnalyzeFiles: true,
+        combinationStrategy: "smart",
+        outputFormat: "markdown",
+        includeMetadata: true,
+        preserveFormatting: true,
+      },
+    );
     setHasUnsavedChanges(false);
     toast.info("Changes discarded");
   };
@@ -227,20 +233,39 @@ export function SettingsPanel({
       toast.success("Connected to Puter successfully!");
     } catch (error) {
       console.error("Puter connection failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Puter";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect to Puter";
 
       // Provide more helpful error messages
-      if (errorMessage.includes("Sign-in was attempted but verification failed")) {
-        toast.error("Sign-in failed. Please try closing any pop-ups and try again.");
+      if (
+        errorMessage.includes("Sign-in was attempted but verification failed")
+      ) {
+        toast.error(
+          "Sign-in failed. Please try closing any pop-ups and try again.",
+        );
       } else if (errorMessage.includes("User not signed in")) {
-        toast.error("Please complete the sign-in process in the pop-up window.");
+        toast.error(
+          "Please complete the sign-in process in the pop-up window.",
+        );
       } else if (errorMessage.includes("SDK failed to load")) {
-        toast.error("Puter service unavailable. Please check your internet connection and refresh the page.");
+        toast.error(
+          "Puter service unavailable. Please check your internet connection and refresh the page.",
+        );
       } else {
         toast.error(errorMessage);
       }
     } finally {
       setIsTestingKey(false);
+    }
+  };
+
+  const handlePuterSignOut = async () => {
+    try {
+      await ai.signOutPuter();
+      setPuterAuthStatus(null);
+      toast.success("Signed out from Puter successfully");
+    } catch (error) {
+      toast.error("Failed to sign out from Puter");
     }
   };
 
@@ -318,7 +343,9 @@ export function SettingsPanel({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm font-medium">You have unsaved changes</span>
+                  <span className="text-sm font-medium">
+                    You have unsaved changes
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -342,60 +369,61 @@ export function SettingsPanel({
             </div>
           )}
 
-          <Tabs defaultValue="services" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-12 touch-manipulation">
-              <TabsTrigger value="services" className="flex items-center gap-2 h-10 touch-manipulation">
+          <Tabs defaultValue="ai" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6 h-12 touch-manipulation">
+              <TabsTrigger value="ai" className="flex items-center gap-2 h-10">
                 <Brain className="w-4 h-4" />
-                <span className="hidden sm:inline">AI & Models</span>
-                <span className="sm:hidden">AI</span>
+                <span className="hidden sm:inline">AI</span>
               </TabsTrigger>
               <TabsTrigger
                 value="processing"
-                className="flex items-center gap-2 h-10 touch-manipulation"
+                className="flex items-center gap-2 h-10"
               >
                 <Zap className="w-4 h-4" />
-                <span className="hidden sm:inline">Processing</span>
-                <span className="sm:hidden">Process</span>
+                <span className="hidden sm:inline">Process</span>
               </TabsTrigger>
               <TabsTrigger
                 value="appearance"
-                className="flex items-center gap-2 h-10 touch-manipulation"
+                className="flex items-center gap-2 h-10"
               >
                 <Palette className="w-4 h-4" />
-                <span className="hidden sm:inline">Appearance</span>
-                <span className="sm:hidden">Theme</span>
+                <span className="hidden sm:inline">Theme</span>
               </TabsTrigger>
-              <TabsTrigger value="data" className="flex items-center gap-2 h-10 touch-manipulation">
+              <TabsTrigger
+                value="data"
+                className="flex items-center gap-2 h-10"
+              >
                 <Database className="w-4 h-4" />
-                <span className="hidden sm:inline">Data & Export</span>
-                <span className="sm:hidden">Data</span>
+                <span className="hidden sm:inline">Data</span>
               </TabsTrigger>
             </TabsList>
 
-            {/* AI Services Tab */}
-            <TabsContent value="services" className="space-y-6 mt-6">
-              {/* Service Selection */}
+            {/* AI & Models Tab */}
+            <TabsContent value="ai" className="space-y-6 mt-6">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
+                    <Brain className="w-4 h-4" />
                     AI Service Selection
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>AI Service</Label>
+                    <Label htmlFor="service-select">Select AI Service</Label>
                     <Select
                       value={pendingService}
                       onValueChange={handleServiceChange}
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
+                      <SelectTrigger
+                        className="h-10 touch-manipulation mt-1"
+                        id="service-select"
+                      >
+                        <SelectValue placeholder="Choose AI service" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="puter">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full" />
                             <div>
                               <div className="font-medium">Puter AI</div>
                               <div className="text-xs text-muted-foreground">
@@ -425,8 +453,25 @@ export function SettingsPanel({
                       <span className="text-sm font-medium">
                         Service Status
                       </span>
-                      <Badge variant={(pendingService === "gemini" ? ai.isGeminiReady : ai.isPuterReady) ? "default" : "secondary"} className="px-3 py-1">
-                        {(pendingService === "gemini" ? ai.isGeminiReady : ai.isPuterReady) ? "Ready" : "Not Ready"}
+                      <Badge
+                        variant={
+                          (
+                            pendingService === "gemini"
+                              ? ai.isGeminiReady
+                              : ai.isPuterReady
+                          )
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="px-3 py-1"
+                      >
+                        {(
+                          pendingService === "gemini"
+                            ? ai.isGeminiReady
+                            : ai.isPuterReady
+                        )
+                          ? "Ready"
+                          : "Not Ready"}
                       </Badge>
                     </div>
 
@@ -537,60 +582,42 @@ export function SettingsPanel({
                           disabled={ai.isLoading || isTestingKey}
                           className="w-full flex items-center gap-2 touch-manipulation h-10"
                         >
-                          {(ai.isLoading || isTestingKey) ? (
+                          {ai.isLoading || isTestingKey ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Shield className="w-4 h-4" />
                           )}
-                          {(ai.isLoading || isTestingKey) ? "Connecting..." : "Connect to Puter"}
+                          {ai.isLoading || isTestingKey
+                            ? "Connecting..."
+                            : "Connect to Puter"}
                         </Button>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-sm font-medium">
+                        <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-800 dark:text-green-200">
                               Connected to Puter
                             </span>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                await ai.signOutPuter();
-                                setPuterAuthStatus(null);
-                                toast.success("Signed out from Puter successfully");
-                              } catch (error) {
-                                toast.error("Failed to sign out from Puter");
-                              }
-                            }}
-                            className="text-xs"
+                            onClick={handlePuterSignOut}
+                            className="h-8 text-xs"
                           >
                             Sign Out
                           </Button>
                         </div>
-
-                        {puterAuthStatus && (
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            {puterAuthStatus.username && (
-                              <p>Signed in as: {puterAuthStatus.username}</p>
-                            )}
-                            <p>
-                              Connection: {puterAuthStatus.connectionQuality}
-                            </p>
-                            {puterAuthStatus.lastConnected && (
-                              <p>
-                                Last connected:{" "}
-                                {new Date(
-                                  puterAuthStatus.lastConnected,
-                                ).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                        )}
                       </div>
+                    )}
+
+                    {ai.error && (
+                      <Alert>
+                        <AlertTriangle className="w-4 h-4" />
+                        <AlertDescription>{ai.error}</AlertDescription>
+                      </Alert>
                     )}
                   </CardContent>
                 </Card>
@@ -599,57 +626,48 @@ export function SettingsPanel({
               {/* Model Selection */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-4 h-4" />
-                      Model Selection
-                    </div>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Model Selection
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={handleRefreshModels}
-                      disabled={!ai.isReady || ai.isLoading}
+                      className="ml-auto h-8 w-8 p-0"
                     >
-                      {ai.isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4" />
-                      )}
-                      Refresh
+                      <RefreshCw className="w-4 h-4" />
                     </Button>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div>
-                    <Label>AI Model</Label>
+                    <Label htmlFor="model-select">AI Model</Label>
                     <Select
                       value={pendingModel}
                       onValueChange={handleModelChange}
-                      disabled={!ai.isReady}
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a model" />
+                      <SelectTrigger
+                        className="h-10 touch-manipulation mt-1"
+                        id="model-select"
+                      >
+                        <SelectValue placeholder="Select model" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ai
-                          .getAvailableModelsForCurrentService()
-                          .map((model) => (
-                            <SelectItem key={model.name} value={model.name}>
-                              <div>
-                                <div className="font-medium">
-                                  {model.displayName}
-                                </div>
-                                {model.description && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {model.description}
-                                    {"provider" in model &&
-                                      model.provider &&
-                                      ` • ${model.provider}`}
-                                  </div>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
+                        {(pendingService === "gemini"
+                          ? ai.availableModels
+                          : ai.availablePuterModels
+                        ).map((model) => (
+                          <SelectItem key={model.name} value={model.name}>
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">
+                                {model.displayName}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {model.description}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -657,71 +675,8 @@ export function SettingsPanel({
               </Card>
             </TabsContent>
 
-            {/* Processing Preferences Tab */}
+            {/* Processing Tab */}
             <TabsContent value="processing" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Automated Processing
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-extract">
-                      Auto-extract text from files
-                    </Label>
-                    <Switch
-                      id="auto-extract"
-                      checked={processingPrefs.autoExtractText}
-                      onCheckedChange={(checked) =>
-                        handleProcessingPrefChange("autoExtractText", checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-analyze">
-                      Auto-analyze files with AI
-                    </Label>
-                    <Switch
-                      id="auto-analyze"
-                      checked={processingPrefs.autoAnalyzeFiles}
-                      onCheckedChange={(checked) =>
-                        handleProcessingPrefChange("autoAnalyzeFiles", checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="include-metadata">
-                      Include file metadata
-                    </Label>
-                    <Switch
-                      id="include-metadata"
-                      checked={processingPrefs.includeMetadata}
-                      onCheckedChange={(checked) =>
-                        handleProcessingPrefChange("includeMetadata", checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="preserve-format">Preserve formatting</Label>
-                    <Switch
-                      id="preserve-format"
-                      checked={processingPrefs.preserveFormatting}
-                      onCheckedChange={(checked) =>
-                        handleProcessingPrefChange(
-                          "preserveFormatting",
-                          checked,
-                        )
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">
@@ -733,7 +688,9 @@ export function SettingsPanel({
                     <Label>File combination strategy</Label>
                     <Select
                       value={processingPrefs.combinationStrategy}
-                      onValueChange={(value: "smart" | "chronological" | "manual") =>
+                      onValueChange={(
+                        value: "smart" | "chronological" | "manual",
+                      ) =>
                         handleProcessingPrefChange("combinationStrategy", value)
                       }
                     >
@@ -756,7 +713,7 @@ export function SettingsPanel({
                     <Label>Default output format</Label>
                     <Select
                       value={processingPrefs.outputFormat}
-                      onValueChange={(value: "markdown" | "html" | "plain") =>
+                      onValueChange={(value: "markdown" | "html" | "text") =>
                         handleProcessingPrefChange("outputFormat", value)
                       }
                     >
@@ -766,9 +723,63 @@ export function SettingsPanel({
                       <SelectContent>
                         <SelectItem value="markdown">Markdown</SelectItem>
                         <SelectItem value="html">HTML</SelectItem>
-                        <SelectItem value="plain">Plain text</SelectItem>
+                        <SelectItem value="text">Plain Text</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="auto-extract">Auto-extract text</Label>
+                      <Switch
+                        id="auto-extract"
+                        checked={processingPrefs.autoExtractText}
+                        onCheckedChange={(checked) =>
+                          handleProcessingPrefChange("autoExtractText", checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="auto-analyze">Auto-analyze files</Label>
+                      <Switch
+                        id="auto-analyze"
+                        checked={processingPrefs.autoAnalyzeFiles}
+                        onCheckedChange={(checked) =>
+                          handleProcessingPrefChange(
+                            "autoAnalyzeFiles",
+                            checked,
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="include-metadata">Include metadata</Label>
+                      <Switch
+                        id="include-metadata"
+                        checked={processingPrefs.includeMetadata}
+                        onCheckedChange={(checked) =>
+                          handleProcessingPrefChange("includeMetadata", checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="preserve-formatting">
+                        Preserve formatting
+                      </Label>
+                      <Switch
+                        id="preserve-formatting"
+                        checked={processingPrefs.preserveFormatting}
+                        onCheckedChange={(checked) =>
+                          handleProcessingPrefChange(
+                            "preserveFormatting",
+                            checked,
+                          )
+                        }
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -784,42 +795,45 @@ export function SettingsPanel({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: "light", label: "Light", icon: Sun },
-                      { value: "dark", label: "Dark", icon: Moon },
-                      { value: "system", label: "System", icon: Monitor },
-                    ].map(({ value, label, icon: Icon }) => (
-                      <Button
-                        key={value}
-                        variant={
-                          settings.theme === value ? "default" : "outline"
-                        }
-                        className="flex flex-col gap-2 h-16 py-4 touch-manipulation"
-                        onClick={() =>
-                          handleThemeChange(
-                            value as "light" | "dark" | "system",
-                          )
-                        }
-                      >
-                        <Icon className="w-5 h-5" />
-                        <span className="text-sm">{label}</span>
-                      </Button>
-                    ))}
-                  </div>
+                  <div>
+                    <Label>Theme Mode</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {[
+                        { value: "light", label: "Light", icon: Sun },
+                        { value: "dark", label: "Dark", icon: Moon },
+                        { value: "system", label: "System", icon: Monitor },
+                      ].map(({ value, label, icon: Icon }) => (
+                        <Button
+                          key={value}
+                          variant={
+                            settings.theme === value ? "default" : "outline"
+                          }
+                          className="flex flex-col gap-2 h-16 py-4 touch-manipulation"
+                          onClick={() =>
+                            handleThemeChange(
+                              value as "light" | "dark" | "system",
+                            )
+                          }
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-sm">{label}</span>
+                        </Button>
+                      ))}
+                    </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="quick-toggle">Quick Theme Toggle</Label>
-                    <Button
-                      id="quick-toggle"
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleTheme}
-                      className="flex items-center gap-2"
-                    >
-                      {getThemeIcon()}
-                      Toggle
-                    </Button>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="quick-toggle">Quick Theme Toggle</Label>
+                      <Button
+                        id="quick-toggle"
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleTheme}
+                        className="flex items-center gap-2"
+                      >
+                        {getThemeIcon()}
+                        Toggle
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -862,15 +876,15 @@ export function SettingsPanel({
                         This will reset all settings to their default values
                       </p>
                     </div>
-                    <Select
-                      value={pendingModel}
-                      onValueChange={handleModelChange}
-                    >
-                      <SelectTrigger className="h-10 touch-manipulation">
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(pendingService === "gemini" ? ai.availableModels : ai.availablePuterModels).map((model) => (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        if (resetConfirm) {
+                          resetSettings();
+                          setResetConfirm(false);
+                          toast.success("Settings reset successfully");
+                        } else {
                           setResetConfirm(true);
                           setTimeout(() => setResetConfirm(false), 3000);
                         }
