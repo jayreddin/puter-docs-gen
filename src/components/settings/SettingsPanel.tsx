@@ -43,6 +43,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AppSettings } from "@/types";
 import { useAI } from "@/hooks/useAI";
+import { PuterDebugInfo } from "@/components/debug/PuterDebugInfo";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -222,10 +223,11 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="api" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="api">API & Models</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="data">Data & Export</TabsTrigger>
+            <TabsTrigger value="debug">Debug</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="h-[60vh] mt-4">
@@ -586,6 +588,10 @@ export function SettingsPanel({
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="debug" className="space-y-6">
+              <PuterDebugInfo />
             </TabsContent>
           </ScrollArea>
         </Tabs>
