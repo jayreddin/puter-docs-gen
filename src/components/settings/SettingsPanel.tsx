@@ -56,32 +56,45 @@ import { PuterDebugInfo } from "@/components/debug/PuterDebugInfo";
 import { PuterAuthPrompt } from "@/components/puter/PuterAuthPrompt";
 
 interface SettingsPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
-  settings: AppSettings;
-  onUpdateSetting: <K extends keyof AppSettings>(
-    key: K,
-    value: AppSettings[K],
-  ) => void;
-  onResetSettings: () => void;
-  onToggleTheme: () => void;
-  ai: ReturnType<typeof useAI>;
+  onClose?: () => void;
 }
 
-export function SettingsPanel({
-  isOpen,
-  onClose,
-  settings,
-  onUpdateSetting,
-  onResetSettings,
-  onToggleTheme,
-  ai,
-}: SettingsPanelProps) {
-  const [apiKey, setApiKey] = useState(settings.apiKey || "");
+export function SettingsPanel({ onClose }: SettingsPanelProps) {
+  const ai = useAI();
+  const [apiKey, setApiKey] = useState("");
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [showPuterAuth, setShowPuterAuth] = useState(false);
+  const [puterAuthStatus, setPuterAuthStatus] = useState<AuthStatus | null>(
+    null,
+  );
+  const [processingPrefs, setProcessingPrefs] = useState<ProcessingPreferences>(
+    {
+      autoExtractText: true,
+      autoAnalyzeFiles: true,
+      combinationStrategy: "smart",
+      outputFormat: "markdown",
+      includeMetadata: true,
+      preserveFormatting: true,
+    },
+  );
+
+  // Load Puter auth status on mount
+  useEffect(() => {
+    const loadAuthStatus = async () => {
+      try {
+        const status = await ai.getPuterAuthStatus();
+        setPuterAuthStatus(status);
+      } catch (error) {
+        console.error("Failed to load auth status:", error);
+      }
+    };
+
+    if (ai.selectedService === "puter") {
+      loadAuthStatus();
+    }
+  }, [ai.selectedService]);
 
   const handleApiKeyTest = async () => {
     if (!apiKey.trim()) {
