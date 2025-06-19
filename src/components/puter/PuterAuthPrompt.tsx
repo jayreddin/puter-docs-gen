@@ -157,9 +157,38 @@ export function PuterAuthPrompt({ onSuccess, onCancel }: PuterAuthPromptProps) {
         {/* Status */}
         {authStatus && (
           <Alert>
-            <AlertDescription className="flex items-center gap-2">
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {authStatus}
+            <AlertDescription className="space-y-3">
+              <div className="flex items-center gap-2">
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {authStatus}
+              </div>
+
+              {/* Progress Bar */}
+              {isLoading && (
+                <div className="space-y-1">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {progress}% complete
+                  </p>
+                </div>
+              )}
+
+              {/* Connection Quality */}
+              {connectionQuality !== "disconnected" && !isLoading && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full",
+                      connectionQuality === "excellent" && "bg-green-500",
+                      connectionQuality === "good" && "bg-yellow-500",
+                      connectionQuality === "poor" && "bg-red-500",
+                    )}
+                  />
+                  <span className="text-sm capitalize">
+                    {connectionQuality} connection
+                  </span>
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
