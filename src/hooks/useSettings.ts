@@ -13,14 +13,14 @@ const DEFAULT_SETTINGS: AppSettings = {
   availablePuterModels: [],
   authStatus: {
     isSignedIn: false,
-    connectionQuality: 'disconnected',
+    connectionQuality: "disconnected",
     retryCount: 0,
   },
   processingPreferences: {
     autoExtractText: true,
     autoAnalyzeFiles: true,
-    combinationStrategy: 'smart',
-    outputFormat: 'markdown',
+    combinationStrategy: "smart",
+    outputFormat: "markdown",
     includeMetadata: true,
     preserveFormatting: true,
   },
@@ -90,17 +90,10 @@ export function useSettings() {
 
   const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
-    storage.clearAll();
-    applyTheme("system");
-    setIsDirty(false);
-  }, [applyTheme]);
-
-  const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
     storage.saveSettings(DEFAULT_SETTINGS);
     setIsDirty(false);
     applyTheme(DEFAULT_SETTINGS.theme);
-  }, []);
+  }, [applyTheme]);
 
   const resetApp = useCallback(() => {
     // Clear all storage
@@ -110,7 +103,14 @@ export function useSettings() {
     applyTheme(DEFAULT_SETTINGS.theme);
     // Reload the page to ensure clean state
     window.location.reload();
+  }, [applyTheme]);
+
+  const openSettings = useCallback(() => {
+    setIsOpen(true);
   }, []);
+
+  const closeSettings = useCallback(() => {
+    if (isDirty) {
       saveSettings();
     }
     setIsOpen(false);
@@ -207,6 +207,7 @@ export function useSettings() {
     updateSetting,
     saveSettings,
     resetSettings,
+    resetApp,
     openSettings,
     closeSettings,
     toggleTheme,
