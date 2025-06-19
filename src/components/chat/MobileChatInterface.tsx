@@ -218,33 +218,33 @@ What would you like to do first?`,
             : msg,
         ),
       }));
-      } catch (error) {
-        console.error("Message handling failed:", error);
+    } catch (error) {
+      console.error("Message handling failed:", error);
 
-        // Set AI service error for the error alert
-        if (error instanceof Error) {
-          setAiServiceError(error.message);
-        }
-
-        // Update loading message with error
-        setChatState((prev) => ({
-          ...prev,
-          messages: prev.messages.map((msg) =>
-            msg.id === loadingMessage.id
-              ? {
-                  ...msg,
-                  content:
-                    "Sorry, I encountered an error processing your request. Please check the AI service status below.",
-                  isLoading: false,
-                }
-              : msg,
-          ),
-        }));
-
-        toast.error(
-          error instanceof Error ? error.message : "Failed to get AI response",
-        );
+      // Set AI service error for the error alert
+      if (error instanceof Error) {
+        setAiServiceError(error.message);
       }
+
+      // Update loading message with error
+      setChatState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === loadingMessage.id
+            ? {
+                ...msg,
+                content:
+                  "Sorry, I encountered an error processing your request. Please check the AI service status below.",
+                isLoading: false,
+              }
+            : msg,
+        ),
+      }));
+
+      toast.error(
+        error instanceof Error ? error.message : "Failed to get AI response",
+      );
+    }
   };
 
   const getStatusInfo = () => {
@@ -373,7 +373,11 @@ What would you like to do first?`,
               variant="ghost"
               size="icon"
               onClick={() => {
-                if (confirm("Clear all files and reset the app? This cannot be undone.")) {
+                if (
+                  confirm(
+                    "Clear all files and reset the app? This cannot be undone.",
+                  )
+                ) {
                   settings.resetApp();
                 }
               }}
@@ -386,101 +390,106 @@ What would you like to do first?`,
         </div>
 
         {/* AI Service Error Alert */}
-      {aiServiceError && (
-        <div className="m-4 mb-0">
-          <AIServiceErrorAlert
-            error={aiServiceError}
-            currentService={ai.selectedService}
-            onSwitchService={(service) => {
-              ai.switchService(service);
-              setAiServiceError(null);
-              toast.success(`Switched to ${service === "puter" ? "Puter AI" : "Gemini AI"}`);
+        {aiServiceError && (
+          <div className="m-4 mb-0">
+            <AIServiceErrorAlert
+              error={aiServiceError}
+              currentService={ai.selectedService}
+              onSwitchService={(service) => {
+                ai.switchService(service);
+                setAiServiceError(null);
+                toast.success(
+                  `Switched to ${service === "puter" ? "Puter AI" : "Gemini AI"}`,
+                );
+              }}
+              onOpenSettings={() => setShowSettings(true)}
+              onRetry={() => {
+                setAiServiceError(null);
+                if (fileHandler.files.length > 0) {
+                  enhancedAI
+                    .generateInsights(fileHandler.files)
+                    .catch((error) => {
+                      if (error instanceof Error) {
+                        setAiServiceError(error.message);
+                      }
+                    });
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* AI Insights Banner */}
+        {!aiServiceError && enhancedAI.aiInsights.length > 0 && (
+          <Alert className="m-4 mb-0">
+            <Lightbulb className="w-4 h-4" />
+            <AlertDescription>
+              <div className="space-y-1">
+                {enhancedAI.aiInsights.slice(0, 2).map((insight, index) => (
+                  <p key={index} className="text-sm">
+                    {insight}
+                  </p>
+                ))}
+                {enhancedAI.aiInsights.length > 2 && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setCurrentView("analyze")}
+                  >
+                    View all insights →
+                  </Button>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
+            {chatState.messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        {/* Input */}
+        <div className="p-4 border-t bg-background/95 backdrop-blur">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
             }}
-            onOpenSettings={() => setShowSettings(true)}
-            onRetry={() => {
-              setAiServiceError(null);
-              if (fileHandler.files.length > 0) {
-                enhancedAI.generateInsights(fileHandler.files).catch((error) => {
-                  if (error instanceof Error) {
-                    setAiServiceError(error.message);
-                  }
-                });
-              }
-            }}
-          />
-        </div>
-      )}
-
-      {/* AI Insights Banner */}
-      {!aiServiceError && enhancedAI.aiInsights.length > 0 && (
-        <Alert className="m-4 mb-0">
-          <Lightbulb className="w-4 h-4" />
-          <AlertDescription>
-            <div className="space-y-1">
-              {enhancedAI.aiInsights.slice(0, 2).map((insight, index) => (
-                <p key={index} className="text-sm">
-                  {insight}
-                </p>
-              ))}
-              {enhancedAI.aiInsights.length > 2 && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs"
-                  onClick={() => setCurrentView("analyze")}
-                >
-                  View all insights →
-                </Button>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {chatState.messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Input */}
-      <div className="p-4 border-t bg-background/95 backdrop-blur">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            ref={inputRef}
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={
-              !ai.isReady
-                ? "Configure AI settings first..."
-                : status.fileCount === 0
-                  ? "Upload files to chat about them..."
-                  : "Ask about your files..."
-            }
-            disabled={!ai.isReady}
-            className="flex-1"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!inputMessage.trim() || !ai.isReady}
+            className="flex gap-2"
           >
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
+            <Input
+              ref={inputRef}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder={
+                !ai.isReady
+                  ? "Configure AI settings first..."
+                  : status.fileCount === 0
+                    ? "Upload files to chat about them..."
+                    : "Ask about your files..."
+              }
+              disabled={!ai.isReady}
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!inputMessage.trim() || !ai.isReady}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Files View with sub-tabs
   const renderFilesView = () => (
