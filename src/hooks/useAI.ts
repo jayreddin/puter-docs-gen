@@ -184,20 +184,19 @@ export function useAI() {
     }
   }, [loadPuterModels]);
 
-  const switchService = useCallback(
-    (service: "gemini" | "puter") => {
-      setSelectedService(service);
-      storage.saveSettings({ selectedService: service });
+  const switchService = useCallback((service: "gemini" | "puter") => {
+    setSelectedService(service);
+    storage.saveSettings({ selectedService: service });
 
-      // Reset current model when switching services
-      if (service === "gemini" && availableModels.length > 0) {
-        setCurrentModel(availableModels[0].name);
-      } else if (service === "puter" && availablePuterModels.length > 0) {
-        setCurrentModel(availablePuterModels[0].name);
-      }
-    },
-    [availableModels, availablePuterModels],
-  );
+    // Set appropriate default models when switching services
+    if (service === "gemini") {
+      setCurrentModel("gemini-2.0-flash-exp");
+      storage.saveSettings({ selectedModel: "gemini-2.0-flash-exp" });
+    } else if (service === "puter") {
+      setCurrentModel("gpt-4.1");
+      storage.saveSettings({ selectedModel: "gpt-4.1" });
+    }
+  }, []);
 
   const switchModel = useCallback(
     (modelName: string) => {
@@ -498,6 +497,48 @@ export function useAI() {
     }
   }, [selectedService, isGeminiReady]);
 
+  /**
+   * Sign out from Puter
+   */
+  const signOutPuter = useCallback(async () => {
+    try {
+      if (window.puter && window.puter.auth) {
+        await window.puter.auth.signOut();
+        setIsPuterReady(false);
+        storage.saveSettings({ isPuterConnected: false });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to sign out from Puter:", error);
+      throw new Error("Failed to sign out from Puter");
+    }
+  }, []);
+
+  /**
+   * Get current provider name and model for display
+   */
+  const getCurrentProviderInfo = useCallback(() => {
+    if (selectedService === "gemini" && isGeminiReady) {
+      return {
+        provider: "Gemini AI",
+        model: currentModel,
+        isActive: true,
+      };
+    } else if (selectedService === "puter" && isPuterReady) {
+      return {
+        provider: "Puter AI",
+        model: currentModel,
+        isActive: true,
+      };
+    }
+    return {
+      provider: selectedService === "gemini" ? "Gemini AI" : "Puter AI",
+      model: currentModel,
+      isActive: false,
+    };
+  }, [selectedService, isGeminiReady, isPuterReady, currentModel]);
+
   const isReady = selectedService === "gemini" ? isGeminiReady : isPuterReady;
 
   return {
@@ -527,6 +568,8 @@ export function useAI() {
     processFilesWithProgress,
     handleUserMessageWithFiles,
     checkServiceHealth,
+    signOutPuter,
+    getCurrentProviderInfo,
 
     // Puter-specific features
     puterService,
