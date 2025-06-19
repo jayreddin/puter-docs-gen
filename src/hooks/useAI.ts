@@ -20,6 +20,8 @@ export function useAI() {
 
   // Initialize with stored settings
   useEffect(() => {
+    const settings = storage.getSettings();
+
     if (settings.apiKey) {
       geminiService.setApiKey(settings.apiKey);
       setIsGeminiReady(true);
