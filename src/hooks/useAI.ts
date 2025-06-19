@@ -18,11 +18,7 @@ export function useAI() {
   >([]);
   const [currentModel, setCurrentModel] = useState("gpt-4o-mini");
 
-  // Initialize with stored settings
-  useEffect(() => {
-    const settings = storage.getSettings();
-
-    // Initialize Gemini if API key exists
+    // Initialize with stored settings
     if (settings.apiKey) {
       geminiService.setApiKey(settings.apiKey);
       setIsGeminiReady(true);
@@ -30,6 +26,10 @@ export function useAI() {
       if (settings.selectedModel && settings.selectedService === "gemini") {
         setCurrentModel(settings.selectedModel);
         geminiService.setModel(settings.selectedModel);
+      } else if (settings.selectedService === "gemini") {
+        // Set default Gemini model
+        setCurrentModel("gemini-2.0-flash-exp");
+        geminiService.setModel("gemini-2.0-flash-exp");
       }
 
       if (settings.availableModels) {
@@ -43,9 +43,18 @@ export function useAI() {
       loadPuterModels();
     }
 
-    // Set selected service
+    // Set selected service and default models
     if (settings.selectedService) {
       setSelectedService(settings.selectedService);
+      if (settings.selectedService === "puter") {
+        // Set default Puter model if no model is set
+        if (!settings.selectedModel) {
+          setCurrentModel("gpt-4.1");
+        } else {
+          setCurrentModel(settings.selectedModel);
+        }
+      }
+    }
       if (settings.selectedService === "puter" && settings.selectedModel) {
         setCurrentModel(settings.selectedModel);
       }
@@ -102,9 +111,7 @@ export function useAI() {
       // Wait for Puter to fully load
       const puterLoaded = await puterService.waitForPuter();
       if (!puterLoaded) {
-        throw new Error(
-          "Puter SDK failed to load. Please reload the page and try again.",
-        );
+        throw new Error("Puter SDK failed to load. Please reload the page and try again.");
       }
 
       // Perform health check
@@ -142,17 +149,14 @@ export function useAI() {
           console.log("Puter connection successful");
         } else {
           setIsPuterReady(false);
-          setError(
-            "Failed to connect to Puter AI services. Please check your internet connection and try again.",
-          );
+          setError("Failed to connect to Puter AI services. Please check your internet connection and try again.");
           storage.saveSettings({ isPuterConnected: false });
         }
       } catch (connectionError) {
         setIsPuterReady(false);
-        const connectionErrorMessage =
-          connectionError instanceof Error
-            ? connectionError.message
-            : "Failed to connect to Puter AI services.";
+        const connectionErrorMessage = connectionError instanceof Error
+          ? connectionError.message
+          : "Failed to connect to Puter AI services.";
         setError(connectionErrorMessage);
         storage.saveSettings({ isPuterConnected: false });
         console.error("Connection test threw error:", connectionError);
@@ -161,19 +165,16 @@ export function useAI() {
       setIsPuterReady(false);
       console.error("Puter connection error details:");
       console.error("Error type:", typeof err);
-      console.error(
-        "Error message:",
-        err instanceof Error ? err.message : "Unknown error",
-      );
+      console.error("Error message:", err instanceof Error ? err.message : 'Unknown error');
       console.error("Full error:", err);
 
       let errorMessage = "Failed to connect to Puter";
 
       if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === "string") {
+      } else if (typeof err === 'string') {
         errorMessage = err;
-      } else if (err && typeof err === "object" && "message" in err) {
+      } else if (err && typeof err === 'object' && 'message' in err) {
         errorMessage = String(err.message);
       }
 
@@ -184,19 +185,22 @@ export function useAI() {
     }
   }, [loadPuterModels]);
 
-  const switchService = useCallback((service: "gemini" | "puter") => {
-    setSelectedService(service);
-    storage.saveSettings({ selectedService: service });
+  const switchService = useCallback(
+    (service: "gemini" | "puter") => {
+      setSelectedService(service);
+      storage.saveSettings({ selectedService: service });
 
-    // Set appropriate default models when switching services
-    if (service === "gemini") {
-      setCurrentModel("gemini-2.0-flash-exp");
-      storage.saveSettings({ selectedModel: "gemini-2.0-flash-exp" });
-    } else if (service === "puter") {
-      setCurrentModel("gpt-4.1");
-      storage.saveSettings({ selectedModel: "gpt-4.1" });
-    }
-  }, []);
+      // Set appropriate default models when switching services
+      if (service === "gemini") {
+        setCurrentModel("gemini-2.0-flash-exp");
+        storage.saveSettings({ selectedModel: "gemini-2.0-flash-exp" });
+      } else if (service === "puter") {
+        setCurrentModel("gpt-4.1");
+        storage.saveSettings({ selectedModel: "gpt-4.1" });
+      }
+    },
+    [],
+  );
 
   const switchModel = useCallback(
     (modelName: string) => {
@@ -253,9 +257,7 @@ export function useAI() {
         } else {
           // Ensure Puter is ready before making the request
           if (!puterService.isAvailable()) {
-            throw new Error(
-              "Puter service not available. Please connect to Puter first.",
-            );
+            throw new Error("Puter service not available. Please connect to Puter first.");
           }
           response = await puterService.generateResponse(prompt, {
             model: currentModel,
@@ -456,26 +458,17 @@ export function useAI() {
 
       // Add file context if files are provided
       if (files && files.length > 0) {
-        const fileContext = files
-          .map(
-            (file) =>
-              `**${file.name}**:\n${file.content.substring(0, 1000)}${file.content.length > 1000 ? "..." : ""}`,
-          )
-          .join("\n\n");
+        const fileContext = files.map(file =>
+          `**${file.name}**:\n${file.content.substring(0, 1000)}${file.content.length > 1000 ? '...' : ''}`
+        ).join('\n\n');
 
-        enhancedContext = fileContext + (context ? `\n\n${context}` : "");
+        enhancedContext = fileContext + (context ? `\n\n${context}` : '');
       }
 
       if (selectedService === "gemini") {
-        return generateResponse(
-          enhancedContext ? `${enhancedContext}\n\n${message}` : message,
-        );
+        return generateResponse(enhancedContext ? `${enhancedContext}\n\n${message}` : message);
       } else {
-        return puterService.handleUserMessage(
-          message,
-          enhancedContext,
-          currentModel,
-        );
+        return puterService.handleUserMessage(message, enhancedContext, currentModel);
       }
     },
     [selectedService, currentModel, generateResponse],
