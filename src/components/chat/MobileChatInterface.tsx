@@ -384,10 +384,8 @@ What would you like to do first?`,
             </Button>
           </div>
         </div>
-      );
-    };
 
-      {/* AI Service Error Alert */}
+        {/* AI Service Error Alert */}
       {aiServiceError && (
         <div className="m-4 mb-0">
           <AIServiceErrorAlert
