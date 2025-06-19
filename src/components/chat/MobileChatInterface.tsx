@@ -451,17 +451,13 @@ What would you like to do first?`,
 
         <TabsContent value="upload" className="flex-1 mt-4">
           <FileUploader
-            onFileDrop={fileHandler.handleDrop}
-            onFileSelect={fileHandler.handleFileInputChange}
-            onFolderSelect={fileHandler.scanFolderContents}
+            onFilesAdded={fileHandler.addFiles}
+            onTextAdded={fileHandler.addTextContent}
             dragOver={fileHandler.dragOver}
             onDragOver={fileHandler.handleDragOver}
             onDragLeave={fileHandler.handleDragLeave}
-            fileInputRef={fileHandler.fileInputRef}
-            folderInputRef={fileHandler.folderInputRef}
+            onDrop={fileHandler.handleDrop}
             isProcessing={fileHandler.isProcessing}
-            onOpenFileDialog={fileHandler.openFileDialog}
-            onOpenFolderDialog={fileHandler.openFolderDialog}
           />
         </TabsContent>
 
