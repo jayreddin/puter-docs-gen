@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { puterService } from "@/lib/puter";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface PuterAuthPromptProps {
   onSuccess: () => void;
