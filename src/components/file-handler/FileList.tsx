@@ -88,8 +88,8 @@ export function FileList({
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="p-4 space-y-3">
+    <ScrollArea className="h-full touch-pan-y">
+      <div className="p-4 space-y-3" style={{ touchAction: "pan-y" }}>
         {/* Upload Progress */}
         {uploadProgress.map((progress) => (
           <Card
