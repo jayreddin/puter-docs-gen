@@ -389,6 +389,60 @@ Once you provide this information, you can start uploading files, pasting conten
           </div>
         )}
 
+        {/* AI Tools Panel */}
+        {showAITools && (
+          <div className="px-4 pb-4">
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-muted-foreground">
+                AI Tools
+              </div>
+
+              {/* AI Tool Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={activeAITool === "chat" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveAITool("chat")}
+                  className="flex flex-col gap-1 h-auto py-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-xs">Chat</span>
+                </Button>
+
+                <Button
+                  variant={activeAITool === "analyze" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveAITool("analyze")}
+                  className="flex flex-col gap-1 h-auto py-2"
+                >
+                  <Brain className="w-4 h-4" />
+                  <span className="text-xs">Analyze</span>
+                </Button>
+
+                <Button
+                  variant={activeAITool === "combine" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveAITool("combine")}
+                  className="flex flex-col gap-1 h-auto py-2"
+                >
+                  <Combine className="w-4 h-4" />
+                  <span className="text-xs">Combine</span>
+                </Button>
+
+                <Button
+                  variant={activeAITool === "pipeline" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveAITool("pipeline")}
+                  className="flex flex-col gap-1 h-auto py-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="text-xs">Pipeline</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Separator />
 
         {/* File List */}
