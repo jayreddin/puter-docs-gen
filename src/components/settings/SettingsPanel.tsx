@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Key,
@@ -53,12 +59,33 @@ import { PuterDebugInfo } from "@/components/debug/PuterDebugInfo";
 import { PuterAuthPrompt } from "@/components/puter/PuterAuthPrompt";
 
 interface SettingsPanelProps {
+  isOpen?: boolean;
   onClose?: () => void;
+  settings?: any;
+  onUpdateSetting?: (key: string, value: any) => void;
+  onResetSettings?: () => void;
+  onToggleTheme?: () => void;
+  ai?: any;
 }
 
-export function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const ai = useAI();
-  const { settings, updateSetting, resetSettings, toggleTheme } = useSettings();
+export function SettingsPanel({
+  isOpen,
+  onClose,
+  settings: externalSettings,
+  onUpdateSetting,
+  onResetSettings,
+  onToggleTheme,
+  ai: externalAI
+}: SettingsPanelProps) {
+  const hookAI = useAI();
+  const hookSettings = useSettings();
+
+  // Use external props if provided, otherwise use hooks
+  const ai = externalAI || hookAI;
+  const settings = externalSettings || hookSettings.settings;
+  const updateSetting = onUpdateSetting || hookSettings.updateSetting;
+  const resetSettings = onResetSettings || hookSettings.resetSettings;
+  const toggleTheme = onToggleTheme || hookSettings.toggleTheme;
 
   const [apiKey, setApiKey] = useState(settings.apiKey || "");
   const [isTestingKey, setIsTestingKey] = useState(false);
@@ -78,9 +105,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       preserveFormatting: true,
     },
   );
-  const [pendingService, setPendingService] = useState<"gemini" | "puter">(
-    ai.selectedService,
-  );
+  const [pendingService, setPendingService] = useState<"gemini" | "puter">(ai.selectedService);
   const [pendingModel, setPendingModel] = useState(ai.currentModel);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -157,9 +182,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       updateSetting("processingPreferences", processingPrefs);
 
       setHasUnsavedChanges(false);
-      toast.success(
-        `Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`,
-      );
+      toast.success(`Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`);
     } catch (error) {
       toast.error("Failed to save settings");
       console.error("Save settings error:", error);
@@ -169,16 +192,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const handleDiscardChanges = () => {
     setPendingService(ai.selectedService);
     setPendingModel(ai.currentModel);
-    setProcessingPrefs(
-      settings.processingPreferences || {
-        autoExtractText: true,
-        autoAnalyzeFiles: true,
-        combinationStrategy: "smart",
-        outputFormat: "markdown",
-        includeMetadata: true,
-        preserveFormatting: true,
-      },
-    );
+    setProcessingPrefs(settings.processingPreferences || {
+      autoExtractText: true,
+      autoAnalyzeFiles: true,
+      combinationStrategy: "smart",
+      outputFormat: "markdown",
+      includeMetadata: true,
+      preserveFormatting: true,
+    });
     setHasUnsavedChanges(false);
     toast.info("Changes discarded");
   };
@@ -206,24 +227,15 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       toast.success("Connected to Puter successfully!");
     } catch (error) {
       console.error("Puter connection failed:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to connect to Puter";
+      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Puter";
 
       // Provide more helpful error messages
-      if (
-        errorMessage.includes("Sign-in was attempted but verification failed")
-      ) {
-        toast.error(
-          "Sign-in failed. Please try closing any pop-ups and try again.",
-        );
+      if (errorMessage.includes("Sign-in was attempted but verification failed")) {
+        toast.error("Sign-in failed. Please try closing any pop-ups and try again.");
       } else if (errorMessage.includes("User not signed in")) {
-        toast.error(
-          "Please complete the sign-in process in the pop-up window.",
-        );
+        toast.error("Please complete the sign-in process in the pop-up window.");
       } else if (errorMessage.includes("SDK failed to load")) {
-        toast.error(
-          "Puter service unavailable. Please check your internet connection and refresh the page.",
-        );
+        toast.error("Puter service unavailable. Please check your internet connection and refresh the page.");
       } else {
         toast.error(errorMessage);
       }
@@ -277,18 +289,13 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col">
+  const panelContent = (
+    <div className="flex flex-col h-full w-full max-w-lg mx-auto bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5" />
           <h2 className="text-lg font-semibold">Settings</h2>
-          {hasUnsavedChanges && (
-            <Badge variant="secondary" className="text-xs">
-              Unsaved
-            </Badge>
-          )}
         </div>
         {onClose && (
           <Button
@@ -296,6 +303,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             size="icon"
             onClick={onClose}
             className="h-10 w-10 touch-manipulation" // Better touch target
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
           >
             <X className="w-4 h-4" />
           </Button>
@@ -311,9 +323,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm font-medium">
-                    You have unsaved changes
-                  </span>
+                  <span className="text-sm font-medium">You have unsaved changes</span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -339,10 +349,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
           <Tabs defaultValue="services" className="w-full">
             <TabsList className="grid w-full grid-cols-4 h-12 touch-manipulation">
-              <TabsTrigger
-                value="services"
-                className="flex items-center gap-2 h-10 touch-manipulation"
-              >
+              <TabsTrigger value="services" className="flex items-center gap-2 h-10 touch-manipulation">
                 <Brain className="w-4 h-4" />
                 <span className="hidden sm:inline">AI & Models</span>
                 <span className="sm:hidden">AI</span>
@@ -363,10 +370,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 <span className="hidden sm:inline">Appearance</span>
                 <span className="sm:hidden">Theme</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="data"
-                className="flex items-center gap-2 h-10 touch-manipulation"
-              >
+              <TabsTrigger value="data" className="flex items-center gap-2 h-10 touch-manipulation">
                 <Database className="w-4 h-4" />
                 <span className="hidden sm:inline">Data & Export</span>
                 <span className="sm:hidden">Data</span>
@@ -426,10 +430,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                       <span className="text-sm font-medium">
                         Service Status
                       </span>
-                      <Badge
-                        variant={ai.isReady ? "default" : "secondary"}
-                        className="px-3 py-1"
-                      >
+                      <Badge variant={ai.isReady ? "default" : "secondary"} className="px-3 py-1">
                         {ai.isReady ? "Ready" : "Not Ready"}
                       </Badge>
                     </div>
@@ -541,14 +542,12 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           disabled={ai.isLoading || isTestingKey}
                           className="w-full flex items-center gap-2 touch-manipulation h-10"
                         >
-                          {ai.isLoading || isTestingKey ? (
+                          {(ai.isLoading || isTestingKey) ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Shield className="w-4 h-4" />
                           )}
-                          {ai.isLoading || isTestingKey
-                            ? "Connecting..."
-                            : "Connect to Puter"}
+                          {(ai.isLoading || isTestingKey) ? "Connecting..." : "Connect to Puter"}
                         </Button>
                       </div>
                     ) : (
@@ -567,9 +566,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                               try {
                                 await ai.signOutPuter();
                                 setPuterAuthStatus(null);
-                                toast.success(
-                                  "Signed out from Puter successfully",
-                                );
+                                toast.success("Signed out from Puter successfully");
                               } catch (error) {
                                 toast.error("Failed to sign out from Puter");
                               }
