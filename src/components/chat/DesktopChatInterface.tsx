@@ -11,6 +11,10 @@ import {
   Plus,
   FileText,
   Trash2,
+  Brain,
+  MessageSquare,
+  Combine,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatMessage, ChatState } from "@/types";
@@ -21,6 +25,10 @@ import { MessageBubble } from "./MessageBubble";
 import { GeneratedContent } from "./GeneratedContent";
 import { FileList } from "@/components/file-handler/FileList";
 import { FileUploader } from "@/components/file-handler/FileUploader";
+import { FileAnalyzer } from "@/components/file-handler/FileAnalyzer";
+import { FileCombiner } from "@/components/file-handler/FileCombiner";
+import { ProcessingPipeline } from "@/components/file-handler/ProcessingPipeline";
+import { AIFileChat } from "@/components/ai/AIFileChat";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { URLScraper } from "@/components/url-scraper/URLScraper";
 import { storage } from "@/lib/storage";
