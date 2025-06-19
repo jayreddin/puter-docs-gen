@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { AppSettings } from "@/types";
 import { useAI } from "@/hooks/useAI";
 import { PuterDebugInfo } from "@/components/debug/PuterDebugInfo";
+import { PuterAuthPrompt } from "@/components/puter/PuterAuthPrompt";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -71,6 +72,7 @@ export function SettingsPanel({
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [showPuterAuth, setShowPuterAuth] = useState(false);
 
   const handleApiKeyTest = async () => {
     if (!apiKey.trim()) {
@@ -96,6 +98,12 @@ export function SettingsPanel({
   };
 
   const handlePuterConnect = async () => {
+    // Show the auth prompt instead of directly connecting
+    setShowPuterAuth(true);
+  };
+
+  const handlePuterAuthSuccess = async () => {
+    setShowPuterAuth(false);
     setIsTestingKey(true);
     try {
       await ai.connectToPuter();
@@ -352,7 +360,7 @@ export function SettingsPanel({
               )}
 
               {/* Puter Connection Section - Only show for Puter */}
-              {settings.selectedService === "puter" && (
+              {settings.selectedService === "puter" && !showPuterAuth && (
                 <Card className="p-4">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
@@ -394,6 +402,14 @@ export function SettingsPanel({
                     </div>
                   </div>
                 </Card>
+              )}
+
+              {/* Puter Auth Prompt */}
+              {settings.selectedService === "puter" && showPuterAuth && (
+                <PuterAuthPrompt
+                  onSuccess={handlePuterAuthSuccess}
+                  onCancel={() => setShowPuterAuth(false)}
+                />
               )}
 
               {/* Model Selection */}
