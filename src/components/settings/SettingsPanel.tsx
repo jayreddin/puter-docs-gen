@@ -44,6 +44,7 @@ import {
   X,
   Wifi,
   WifiOff,
+  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProcessingPreferences, AuthStatus } from "@/types";
@@ -78,6 +79,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       preserveFormatting: true,
     },
   );
+  const [pendingService, setPendingService] = useState<"gemini" | "puter">(
+    ai.selectedService,
+  );
+  const [pendingModel, setPendingModel] = useState(ai.currentModel);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Load Puter auth status on mount
   useEffect(() => {
@@ -119,21 +125,63 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   };
 
   const handleServiceChange = (service: "gemini" | "puter") => {
-    ai.switchService(service);
-    updateSetting("selectedService", service);
-
-    if (service === "puter") {
-      // Load Puter auth status
-      ai.getPuterAuthStatus().then(setPuterAuthStatus);
-    }
-
-    toast.success(`Switched to ${service === "puter" ? "Puter AI" : "Gemini"}`);
+    setPendingService(service);
+    setHasUnsavedChanges(true);
   };
 
   const handleModelChange = (modelName: string) => {
-    ai.switchModel(modelName);
-    updateSetting("selectedModel", modelName);
-    toast.success(`Model changed to ${modelName}`);
+    setPendingModel(modelName);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      // Apply service change
+      if (pendingService !== ai.selectedService) {
+        ai.switchService(pendingService);
+        updateSetting("selectedService", pendingService);
+
+        if (pendingService === "puter") {
+          // Load Puter auth status
+          const status = await ai.getPuterAuthStatus();
+          setPuterAuthStatus(status);
+        }
+      }
+
+      // Apply model change
+      if (pendingModel !== ai.currentModel) {
+        ai.switchModel(pendingModel);
+        updateSetting("selectedModel", pendingModel);
+      }
+
+      // Save processing preferences
+      updateSetting("processingPreferences", processingPrefs);
+
+      setHasUnsavedChanges(false);
+      toast.success(
+        `Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`,
+      );
+    } catch (error) {
+      toast.error("Failed to save settings");
+      console.error("Save settings error:", error);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setPendingService(ai.selectedService);
+    setPendingModel(ai.currentModel);
+    setProcessingPrefs(
+      settings.processingPreferences || {
+        autoExtractText: true,
+        autoAnalyzeFiles: true,
+        combinationStrategy: "smart",
+        outputFormat: "markdown",
+        includeMetadata: true,
+        preserveFormatting: true,
+      },
+    );
+    setHasUnsavedChanges(false);
+    toast.info("Changes discarded");
   };
 
   const handleRefreshModels = async () => {
@@ -169,7 +217,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   ) => {
     const newPrefs = { ...processingPrefs, [key]: value };
     setProcessingPrefs(newPrefs);
-    updateSetting("processingPreferences", newPrefs);
+    setHasUnsavedChanges(true);
   };
 
   const exportSettings = () => {
@@ -212,12 +260,22 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     <div className="w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Settings className="w-5 h-5" />
-          Settings
-        </h2>
+          <h2 className="text-lg font-semibold">Settings</h2>
+          {hasUnsavedChanges && (
+            <Badge variant="secondary" className="text-xs">
+              Unsaved
+            </Badge>
+          )}
+        </div>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-10 w-10 touch-manipulation" // Better touch target
+          >
             <X className="w-4 h-4" />
           </Button>
         )}
@@ -226,16 +284,51 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       {/* Settings Content */}
       <ScrollArea className="flex-1">
         <div className="p-4">
+          {/* Save/Discard Bar */}
+          {hasUnsavedChanges && (
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm font-medium">
+                    You have unsaved changes
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscardChanges}
+                    className="h-9 px-3 touch-manipulation"
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveSettings}
+                    className="h-9 px-3 touch-manipulation bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Save & Apply
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Tabs defaultValue="services" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="services" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-4 h-12 touch-manipulation">
+              <TabsTrigger
+                value="services"
+                className="flex items-center gap-2 h-10 touch-manipulation"
+              >
                 <Brain className="w-4 h-4" />
                 <span className="hidden sm:inline">AI & Models</span>
                 <span className="sm:hidden">AI</span>
               </TabsTrigger>
               <TabsTrigger
                 value="processing"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-10 touch-manipulation"
               >
                 <Zap className="w-4 h-4" />
                 <span className="hidden sm:inline">Processing</span>
@@ -243,13 +336,16 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               </TabsTrigger>
               <TabsTrigger
                 value="appearance"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-10 touch-manipulation"
               >
                 <Palette className="w-4 h-4" />
                 <span className="hidden sm:inline">Appearance</span>
                 <span className="sm:hidden">Theme</span>
               </TabsTrigger>
-              <TabsTrigger value="data" className="flex items-center gap-2">
+              <TabsTrigger
+                value="data"
+                className="flex items-center gap-2 h-10 touch-manipulation"
+              >
                 <Database className="w-4 h-4" />
                 <span className="hidden sm:inline">Data & Export</span>
                 <span className="sm:hidden">Data</span>
@@ -268,9 +364,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>Current Service</Label>
+                    <Label>AI Service</Label>
                     <Select
-                      value={ai.selectedService}
+                      value={pendingService}
                       onValueChange={handleServiceChange}
                     >
                       <SelectTrigger className="mt-1">
@@ -304,12 +400,15 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   </div>
 
                   {/* Service Status */}
-                  <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="p-4 bg-muted/50 rounded-lg touch-manipulation">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">
                         Service Status
                       </span>
-                      <Badge variant={ai.isReady ? "default" : "secondary"}>
+                      <Badge
+                        variant={ai.isReady ? "default" : "secondary"}
+                        className="px-3 py-1"
+                      >
                         {ai.isReady ? "Ready" : "Not Ready"}
                       </Badge>
                     </div>
@@ -507,9 +606,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </CardHeader>
                 <CardContent>
                   <div>
-                    <Label>Current Model</Label>
+                    <Label>AI Model</Label>
                     <Select
-                      value={ai.currentModel}
+                      value={pendingModel}
                       onValueChange={handleModelChange}
                       disabled={!ai.isReady}
                     >
@@ -683,7 +782,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         variant={
                           settings.theme === value ? "default" : "outline"
                         }
-                        className="flex flex-col gap-2 h-auto py-4"
+                        className="flex flex-col gap-2 h-16 py-4 touch-manipulation"
                         onClick={() =>
                           handleThemeChange(
                             value as "light" | "dark" | "system",
@@ -800,6 +899,28 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </Tabs>
         </div>
       </ScrollArea>
+
+      {/* Bottom Save Bar for Mobile */}
+      {hasUnsavedChanges && (
+        <div className="border-t bg-background/95 backdrop-blur p-4">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handleDiscardChanges}
+              className="flex-1 h-12 touch-manipulation"
+            >
+              Discard Changes
+            </Button>
+            <Button
+              onClick={handleSaveSettings}
+              className="flex-1 h-12 touch-manipulation bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Save & Apply
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Puter Auth Modal */}
       {showPuterAuth && (
