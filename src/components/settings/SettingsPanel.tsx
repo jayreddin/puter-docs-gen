@@ -732,10 +732,8 @@ export function SettingsPanel({
                   <div>
                     <Label>File combination strategy</Label>
                     <Select
-                      value={pendingService}
-                      onValueChange={handleServiceChange}
-                    >
-                      ) =>
+                      value={processingPrefs.combinationStrategy}
+                      onValueChange={(value: "smart" | "chronological" | "manual") =>
                         handleProcessingPrefChange("combinationStrategy", value)
                       }
                     >
