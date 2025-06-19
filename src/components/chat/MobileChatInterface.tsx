@@ -649,9 +649,11 @@ What would you like to do first?`,
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background mobile-chat-container">
       {/* Main Content */}
-      <div className="flex-1 min-h-0">{renderMainContent()}</div>
+      <div className="flex-1 min-h-0 mobile-scroll touch-auto">
+        {renderMainContent()}
+      </div>
 
       {/* Bottom Navigation */}
       {renderBottomNavigation()}
