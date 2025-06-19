@@ -30,6 +30,7 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatMessage, ChatState, UploadedFile } from "@/types";
@@ -217,33 +218,33 @@ What would you like to do first?`,
             : msg,
         ),
       }));
-    } catch (error) {
-      console.error("Message handling failed:", error);
+      } catch (error) {
+        console.error("Message handling failed:", error);
 
-      // Set AI service error for the error alert
-      if (error instanceof Error) {
-        setAiServiceError(error.message);
+        // Set AI service error for the error alert
+        if (error instanceof Error) {
+          setAiServiceError(error.message);
+        }
+
+        // Update loading message with error
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg.id === loadingMessage.id
+              ? {
+                  ...msg,
+                  content:
+                    "Sorry, I encountered an error processing your request. Please check the AI service status below.",
+                  isLoading: false,
+                }
+              : msg,
+          ),
+        }));
+
+        toast.error(
+          error instanceof Error ? error.message : "Failed to get AI response",
+        );
       }
-
-      // Update loading message with error
-      setChatState((prev) => ({
-        ...prev,
-        messages: prev.messages.map((msg) =>
-          msg.id === loadingMessage.id
-            ? {
-                ...msg,
-                content:
-                  "Sorry, I encountered an error processing your request. Please check the AI service status below.",
-                isLoading: false,
-              }
-            : msg,
-        ),
-      }));
-
-      toast.error(
-        error instanceof Error ? error.message : "Failed to get AI response",
-      );
-    }
   };
 
   const getStatusInfo = () => {
@@ -337,22 +338,54 @@ What would you like to do first?`,
   );
 
   // Chat View
-  const renderChatView = () => (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold">AI Chat</h1>
-          <Badge variant={ai.isReady ? "default" : "secondary"}>
-            {status.serviceStatus}
-          </Badge>
+  const renderChatView = () => {
+    const providerInfo = ai.getCurrentProviderInfo();
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h1 className="text-lg font-semibold">AI Chat</h1>
+            {providerInfo.isActive ? (
+              <div className="flex items-center gap-1">
+                <Badge variant="default" className="text-xs">
+                  {providerInfo.provider}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {providerInfo.model}
+                </Badge>
+              </div>
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                {status.serviceStatus}
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {status.fileCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {status.fileCount} files
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (confirm("Clear all files and reset the app? This cannot be undone.")) {
+                  settings.resetApp();
+                }
+              }}
+              className="h-8 w-8"
+              title="Clear/New - Reset app and clear all files"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-        {status.fileCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {status.fileCount} files
-          </Badge>
-        )}
-      </div>
+      );
+    };
 
       {/* AI Service Error Alert */}
       {aiServiceError && (
@@ -363,21 +396,17 @@ What would you like to do first?`,
             onSwitchService={(service) => {
               ai.switchService(service);
               setAiServiceError(null);
-              toast.success(
-                `Switched to ${service === "puter" ? "Puter AI" : "Gemini AI"}`,
-              );
+              toast.success(`Switched to ${service === "puter" ? "Puter AI" : "Gemini AI"}`);
             }}
             onOpenSettings={() => setShowSettings(true)}
             onRetry={() => {
               setAiServiceError(null);
               if (fileHandler.files.length > 0) {
-                enhancedAI
-                  .generateInsights(fileHandler.files)
-                  .catch((error) => {
-                    if (error instanceof Error) {
-                      setAiServiceError(error.message);
-                    }
-                  });
+                enhancedAI.generateInsights(fileHandler.files).catch((error) => {
+                  if (error instanceof Error) {
+                    setAiServiceError(error.message);
+                  }
+                });
               }
             }}
           />
