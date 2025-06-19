@@ -145,7 +145,7 @@ export function FileCombiner({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-32">
+          <ScrollArea className="h-32 touch-pan-y">
             <div className="space-y-2">
               {files.map((file, index) => (
                 <div
@@ -425,7 +425,7 @@ export function FileCombiner({
             <CardTitle className="text-sm font-medium">Preview</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-64">
+            <ScrollArea className="h-64 touch-pan-y">
               <pre className="text-xs whitespace-pre-wrap">
                 {combinationResult.content.substring(0, 2000)}
                 {combinationResult.content.length > 2000 && "..."}

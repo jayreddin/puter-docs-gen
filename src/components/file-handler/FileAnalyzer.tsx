@@ -559,7 +559,7 @@ export function FileAnalyzer({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-64">
+                <ScrollArea className="h-64 touch-pan-y">
                   <div className="space-y-3">
                     {fileRelationships.map((relationship, index) => {
                       const file1 = files.find(

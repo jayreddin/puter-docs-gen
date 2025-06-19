@@ -399,7 +399,7 @@ export function ProcessingPipeline({
             {/* Pipeline Steps */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Processing Steps</Label>
-              <ScrollArea className="h-48">
+              <ScrollArea className="h-48 touch-pan-y">
                 <div className="space-y-3">
                   {currentPipeline.steps.map((step, index) => (
                     <div
