@@ -11,6 +11,19 @@ const DEFAULT_SETTINGS: AppSettings = {
   isPuterConnected: false,
   availableModels: [],
   availablePuterModels: [],
+  authStatus: {
+    isSignedIn: false,
+    connectionQuality: "disconnected",
+    retryCount: 0,
+  },
+  processingPreferences: {
+    autoExtractText: true,
+    autoAnalyzeFiles: true,
+    combinationStrategy: "smart",
+    outputFormat: "markdown",
+    includeMetadata: true,
+    preserveFormatting: true,
+  },
 };
 
 export function useSettings() {
