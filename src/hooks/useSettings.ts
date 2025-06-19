@@ -4,7 +4,7 @@ import { storage } from "@/lib/storage";
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "",
-  selectedModel: "gpt-4o-mini",
+  selectedModel: "gpt-4.1", // Default Puter model
   selectedService: "puter",
   theme: "system",
   isApiKeyValid: false,
@@ -13,14 +13,14 @@ const DEFAULT_SETTINGS: AppSettings = {
   availablePuterModels: [],
   authStatus: {
     isSignedIn: false,
-    connectionQuality: "disconnected",
+    connectionQuality: 'disconnected',
     retryCount: 0,
   },
   processingPreferences: {
     autoExtractText: true,
     autoAnalyzeFiles: true,
-    combinationStrategy: "smart",
-    outputFormat: "markdown",
+    combinationStrategy: 'smart',
+    outputFormat: 'markdown',
     includeMetadata: true,
     preserveFormatting: true,
   },
@@ -95,12 +95,22 @@ export function useSettings() {
     setIsDirty(false);
   }, [applyTheme]);
 
-  const openSettings = useCallback(() => {
-    setIsOpen(true);
+  const resetSettings = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS);
+    storage.saveSettings(DEFAULT_SETTINGS);
+    setIsDirty(false);
+    applyTheme(DEFAULT_SETTINGS.theme);
   }, []);
 
-  const closeSettings = useCallback(() => {
-    if (isDirty) {
+  const resetApp = useCallback(() => {
+    // Clear all storage
+    storage.clearAll();
+    // Reset to default settings
+    setSettings(DEFAULT_SETTINGS);
+    applyTheme(DEFAULT_SETTINGS.theme);
+    // Reload the page to ensure clean state
+    window.location.reload();
+  }, []);
       saveSettings();
     }
     setIsOpen(false);
