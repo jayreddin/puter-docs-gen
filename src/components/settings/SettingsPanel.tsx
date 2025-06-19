@@ -990,9 +990,7 @@ export function SettingsPanel({
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl h-[90vh] p-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Settings</DialogTitle>
-          </DialogHeader>
+          <DialogTitle className="sr-only">Settings</DialogTitle>
           {panelContent}
         </DialogContent>
       </Dialog>
