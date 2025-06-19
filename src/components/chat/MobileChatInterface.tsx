@@ -46,8 +46,9 @@ import { FileCombiner } from "@/components/file-handler/FileCombiner";
 import { ProcessingPipeline } from "@/components/file-handler/ProcessingPipeline";
 import { FileAnalyzer } from "@/components/file-handler/FileAnalyzer";
 import { AIFileChat } from "@/components/ai/AIFileChat";
-import { SettingsPanel } from "@/components/settings/SettingsPanel";
-import { URLScraper } from "@/components/url-scraper/URLScraper";
+import { AIServiceErrorAlert } from "@/components/ai/AIServiceErrorAlert";
+import { MessageBubble } from "./MessageBubble";
+import { GeneratedContent } from "./GeneratedContent";
 import { storage } from "@/lib/storage";
 
 type MobileView =
@@ -76,6 +77,7 @@ export function MobileChatInterface() {
   const [selectedFileForAnalysis, setSelectedFileForAnalysis] = useState<
     string | undefined
   >();
+  const [aiServiceError, setAiServiceError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -142,7 +144,12 @@ What would you like to do first?`,
   // Generate AI insights when files change
   useEffect(() => {
     if (fileHandler.files.length > 0 && enhancedAI.aiInsights.length === 0) {
-      enhancedAI.generateInsights(fileHandler.files);
+      enhancedAI.generateInsights(fileHandler.files).catch((error) => {
+        console.error("AI insights generation failed:", error);
+        if (error instanceof Error) {
+          setAiServiceError(error.message);
+        }
+      });
     }
   }, [fileHandler.files.length]);
 
@@ -213,6 +220,11 @@ What would you like to do first?`,
     } catch (error) {
       console.error("Message handling failed:", error);
 
+      // Set AI service error for the error alert
+      if (error instanceof Error) {
+        setAiServiceError(error.message);
+      }
+
       // Update loading message with error
       setChatState((prev) => ({
         ...prev,
@@ -221,7 +233,7 @@ What would you like to do first?`,
             ? {
                 ...msg,
                 content:
-                  "Sorry, I encountered an error processing your request. Please try again.",
+                  "Sorry, I encountered an error processing your request. Please check the AI service status below.",
                 isLoading: false,
               }
             : msg,
@@ -342,8 +354,38 @@ What would you like to do first?`,
         )}
       </div>
 
+      {/* AI Service Error Alert */}
+      {aiServiceError && (
+        <div className="m-4 mb-0">
+          <AIServiceErrorAlert
+            error={aiServiceError}
+            currentService={ai.selectedService}
+            onSwitchService={(service) => {
+              ai.switchService(service);
+              setAiServiceError(null);
+              toast.success(
+                `Switched to ${service === "puter" ? "Puter AI" : "Gemini AI"}`,
+              );
+            }}
+            onOpenSettings={() => setShowSettings(true)}
+            onRetry={() => {
+              setAiServiceError(null);
+              if (fileHandler.files.length > 0) {
+                enhancedAI
+                  .generateInsights(fileHandler.files)
+                  .catch((error) => {
+                    if (error instanceof Error) {
+                      setAiServiceError(error.message);
+                    }
+                  });
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* AI Insights Banner */}
-      {enhancedAI.aiInsights.length > 0 && (
+      {!aiServiceError && enhancedAI.aiInsights.length > 0 && (
         <Alert className="m-4 mb-0">
           <Lightbulb className="w-4 h-4" />
           <AlertDescription>
