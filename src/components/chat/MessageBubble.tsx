@@ -4,7 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/types";
-import { Bot, User, FileText, Paperclip, Lightbulb, Loader2 } from "lucide-react";
+import {
+  Bot,
+  User,
+  FileText,
+  Paperclip,
+  Lightbulb,
+  Loader2,
+} from "lucide-react";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -59,7 +66,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <>
               {/* Message Text */}
               <div className="prose prose-sm max-w-none dark:prose-invert">
-                {message.content.split('\n').map((line, index) => (
+                {message.content.split("\n").map((line, index) => (
                   <p key={index} className="mb-2 last:mb-0">
                     {line}
                   </p>
@@ -103,28 +110,33 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               )}
 
               {/* AI Insights */}
-              {message.aiInsights && message.aiInsights.length > 0 && !isUser && (
-                <div className="mt-3 pt-3 border-t border-muted-foreground/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="w-4 h-4 text-yellow-500" />
-                    <span className="text-xs text-muted-foreground font-medium">
-                      AI Insights
-                    </span>
+              {message.aiInsights &&
+                message.aiInsights.length > 0 &&
+                !isUser && (
+                  <div className="mt-3 pt-3 border-t border-muted-foreground/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-4 h-4 text-yellow-500" />
+                      <span className="text-xs text-muted-foreground font-medium">
+                        AI Insights
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {message.aiInsights.slice(0, 2).map((insight, index) => (
+                        <p
+                          key={index}
+                          className="text-xs text-muted-foreground"
+                        >
+                          • {insight}
+                        </p>
+                      ))}
+                      {message.aiInsights.length > 2 && (
+                        <p className="text-xs text-muted-foreground">
+                          • And {message.aiInsights.length - 2} more insights...
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    {message.aiInsights.slice(0, 2).map((insight, index) => (
-                      <p key={index} className="text-xs text-muted-foreground">
-                        • {insight}
-                      </p>
-                    ))}
-                    {message.aiInsights.length > 2 && (
-                      <p className="text-xs text-muted-foreground">
-                        • And {message.aiInsights.length - 2} more insights...
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
             </>
           )}
         </Card>
@@ -138,38 +150,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         >
           {new Date(message.timestamp).toLocaleTimeString()}
         </div>
-      </div>
-    </div>
-  );
-}
-        >
-          {message.isLoading ? (
-            <div className="flex items-center space-x-2">
-              <div className="loading-dots">
-                <div style={{ "--i": 0 } as React.CSSProperties}></div>
-                <div style={{ "--i": 1 } as React.CSSProperties}></div>
-                <div style={{ "--i": 2 } as React.CSSProperties}></div>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                AI is thinking...
-              </span>
-            </div>
-          ) : (
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {message.content}
-            </div>
-          )}
-
-          {/* Timestamp */}
-          <div
-            className={cn(
-              "text-2xs mt-2 opacity-60",
-              isUser ? "text-white/70" : "text-muted-foreground",
-            )}
-          >
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </div>
-        </Card>
       </div>
     </div>
   );
