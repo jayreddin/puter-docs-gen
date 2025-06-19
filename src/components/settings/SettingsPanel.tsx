@@ -335,8 +335,8 @@ export function SettingsPanel({
       </div>
 
       {/* Settings Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-4">
+      <ScrollArea className="flex-1 touch-pan-y">
+        <div className="p-4" style={{ touchAction: "pan-y" }}>
           {/* Save/Discard Bar */}
           {hasUnsavedChanges && (
             <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-orange-200 dark:border-orange-800">
