@@ -47,6 +47,8 @@ import { ProcessingPipeline } from "@/components/file-handler/ProcessingPipeline
 import { FileAnalyzer } from "@/components/file-handler/FileAnalyzer";
 import { AIFileChat } from "@/components/ai/AIFileChat";
 import { AIServiceErrorAlert } from "@/components/ai/AIServiceErrorAlert";
+import { SettingsPanel } from "@/components/settings/SettingsPanel";
+import { URLScraper } from "@/components/url-scraper/URLScraper";
 import { storage } from "@/lib/storage";
 
 type MobileView =
