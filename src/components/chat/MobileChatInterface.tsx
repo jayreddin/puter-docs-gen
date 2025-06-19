@@ -2,39 +2,63 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 import {
   Settings,
   Upload,
-  FolderOpen,
   Send,
   Plus,
   FileText,
-  Trash2,
-  Menu,
   MessageSquare,
   Files,
   Globe,
   ArrowLeft,
-  X,
+  Brain,
+  Combine,
+  Zap,
+  BarChart3,
+  Eye,
+  Lightbulb,
+  Network,
+  Menu,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ChatMessage, ChatState } from "@/types";
+import { ChatMessage, ChatState, UploadedFile } from "@/types";
 import { useAI } from "@/hooks/useAI";
 import { useFileHandler } from "@/hooks/useFileHandler";
 import { useSettings } from "@/hooks/useSettings";
+import { useFileExtraction } from "@/hooks/useFileExtraction";
+import { useEnhancedAI } from "@/hooks/useEnhancedAI";
 import { MessageBubble } from "./MessageBubble";
 import { GeneratedContent } from "./GeneratedContent";
 import { FileList } from "@/components/file-handler/FileList";
 import { FileUploader } from "@/components/file-handler/FileUploader";
+import { FileCombiner } from "@/components/file-handler/FileCombiner";
+import { ProcessingPipeline } from "@/components/file-handler/ProcessingPipeline";
+import { FileAnalyzer } from "@/components/file-handler/FileAnalyzer";
+import { AIFileChat } from "@/components/ai/AIFileChat";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { URLScraper } from "@/components/url-scraper/URLScraper";
 import { storage } from "@/lib/storage";
 
-type MobileView = "chat" | "files" | "upload" | "url";
+type MobileView =
+  | "chat"
+  | "files"
+  | "upload"
+  | "url"
+  | "analyze"
+  | "combine"
+  | "pipeline"
+  | "ai-chat";
 
 export function MobileChatInterface() {
   const [chatState, setChatState] = useState<ChatState>({
@@ -49,6 +73,9 @@ export function MobileChatInterface() {
   const [inputMessage, setInputMessage] = useState("");
   const [currentView, setCurrentView] = useState<MobileView>("chat");
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedFileForAnalysis, setSelectedFileForAnalysis] = useState<
+    string | undefined
+  >();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +83,8 @@ export function MobileChatInterface() {
   const ai = useAI();
   const fileHandler = useFileHandler();
   const settings = useSettings();
+  const fileExtraction = useFileExtraction();
+  const enhancedAI = useEnhancedAI();
 
   // Load stored data on mount
   useEffect(() => {
@@ -65,17 +94,24 @@ export function MobileChatInterface() {
     if (storedMessages.length > 0) {
       setChatState((prev) => ({ ...prev, messages: storedMessages }));
     } else {
-      // Start with initial AI message
+      // Start with enhanced initial AI message
       const initialMessage: ChatMessage = {
         id: `msg_${Date.now()}`,
         type: "ai",
-        content: `Hello! I'm your AI assistant for document compilation. I'll help you combine multiple files into a single markdown document.
+        content: `Hello! I'm your AI assistant for document processing and analysis. I can help you:
 
-To get started, please tell me:
-1. What would you like to name your compiled document?
-2. How many files do you plan to upload or add?
+📁 **Manage Files**: Upload, organize, and combine multiple documents
+🧠 **AI Analysis**: Analyze content, extract insights, and identify relationships
+🔄 **Smart Processing**: Automated pipelines for text extraction and combination
+💬 **File Chat**: Ask questions about your documents with full context
 
-Once you provide this information, you can start uploading files, pasting content, or adding URLs to scrape. I'll wait until you've added all the files before compiling them into your final document.`,
+**Quick Start:**
+1. Upload files using the Files tab
+2. Use AI Chat to ask questions about your documents
+3. Try the Analyzer for AI-powered insights
+4. Use the Combiner to merge files intelligently
+
+What would you like to do first?`,
         timestamp: Date.now(),
       };
 
@@ -102,6 +138,13 @@ Once you provide this information, you can start uploading files, pasting conten
       storage.saveMessages(chatState.messages);
     }
   }, [chatState.messages]);
+
+  // Generate AI insights when files change
+  useEffect(() => {
+    if (fileHandler.files.length > 0 && enhancedAI.aiInsights.length === 0) {
+      enhancedAI.generateInsights(fileHandler.files);
+    }
+  }, [fileHandler.files.length]);
 
   const addMessage = (message: Omit<ChatMessage, "id" | "timestamp">) => {
     const newMessage: ChatMessage = {
@@ -143,403 +186,438 @@ Once you provide this information, you can start uploading files, pasting conten
     }));
 
     try {
-      let context = "";
+      // Use enhanced message handling with file context
+      const response = await ai.handleUserMessageWithFiles(
+        userMessage,
+        fileHandler.files.map((f) => ({ name: f.name, content: f.content })),
+      );
 
-      // Check if user is providing document info
-      if (chatState.currentStep === "initial") {
-        const nameMatch = userMessage.match(/name[:\s]+([^\n,]+)/i);
-        const countMatch = userMessage.match(/(\d+)\s*files?/i);
-
-        if (nameMatch && countMatch) {
-          const docName = nameMatch[1].trim();
-          const fileCount = parseInt(countMatch[1]);
-
-          setChatState((prev) => ({
-            ...prev,
-            documentName: docName,
-            expectedFileCount: fileCount,
-            currentStep: "collecting_files",
-          }));
-
-          context = `Document name: ${docName}, Expected files: ${fileCount}`;
-        }
-      }
-
-      // Add current files context if any
-      if (fileHandler.files.length > 0) {
-        context += `\nCurrent files uploaded: ${fileHandler.files.length}/${chatState.expectedFileCount}`;
-        context += `\nFiles: ${fileHandler.files.map((f) => f.name).join(", ")}`;
-      }
-
-      const response = await ai.handleUserMessage(userMessage, context);
-
-      // Remove loading message and add actual response
-      setChatState((prev) => ({
-        ...prev,
-        messages: prev.messages.map((msg) =>
-          msg.id === loadingMessage.id
-            ? { ...msg, content: response, isLoading: false }
-            : msg,
-        ),
-      }));
-    } catch (error) {
-      // Remove loading message and add error
+      // Update loading message with response
       setChatState((prev) => ({
         ...prev,
         messages: prev.messages.map((msg) =>
           msg.id === loadingMessage.id
             ? {
                 ...msg,
-                content: "Sorry, I encountered an error. Please try again.",
+                content: response,
+                isLoading: false,
+                attachedFiles: fileHandler.files.map((f) => f.id),
+                contextSummary:
+                  fileHandler.files.length > 0
+                    ? `Context from ${fileHandler.files.length} file${fileHandler.files.length > 1 ? "s" : ""}: ${fileHandler.files.map((f) => f.name).join(", ")}`
+                    : undefined,
+              }
+            : msg,
+        ),
+      }));
+    } catch (error) {
+      console.error("Message handling failed:", error);
+
+      // Update loading message with error
+      setChatState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === loadingMessage.id
+            ? {
+                ...msg,
+                content:
+                  "Sorry, I encountered an error processing your request. Please try again.",
                 isLoading: false,
               }
             : msg,
         ),
       }));
-    }
-  };
 
-  const handleGenerateDocument = async () => {
-    if (!ai.isReady || fileHandler.files.length === 0) return;
-
-    setChatState((prev) => ({ ...prev, isProcessing: true }));
-
-    try {
-      const filesForCompilation = fileHandler.getFilesForCompilation();
-      const content = await ai.processFiles(
-        filesForCompilation,
-        chatState.documentName || "Compiled Document",
+      toast.error(
+        error instanceof Error ? error.message : "Failed to get AI response",
       );
-
-      setChatState((prev) => ({
-        ...prev,
-        generatedContent: {
-          id: `gen_${Date.now()}`,
-          content,
-          timestamp: Date.now(),
-          isCondensed: false,
-          showAsMarkdown: true,
-        },
-        currentStep: "generated",
-        isProcessing: false,
-      }));
-
-      // Switch to chat view to see result
-      setCurrentView("chat");
-
-      // Add success message
-      addMessage({
-        type: "ai",
-        content: `Great! I've compiled all ${fileHandler.files.length} files into your document "${chatState.documentName || "Compiled Document"}". You can now download it or copy the content below.`,
-      });
-    } catch (error) {
-      setChatState((prev) => ({ ...prev, isProcessing: false }));
-      addMessage({
-        type: "ai",
-        content:
-          "Sorry, I encountered an error while generating the document. Please try again.",
-      });
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const getStatusInfo = () => {
+    const fileCount = fileHandler.files.length;
+    const isProcessing = fileExtraction.isProcessing || enhancedAI.isLoading;
+    const serviceStatus = ai.isReady ? "AI Ready" : "AI Not Ready";
+
+    return {
+      fileCount,
+      isProcessing,
+      serviceStatus,
+      hasInsights: enhancedAI.aiInsights.length > 0,
+      hasCombination: !!fileExtraction.combinationResult,
+      hasPipeline: !!fileExtraction.currentPipeline,
+    };
   };
 
-  const canGenerate =
-    ai.isReady &&
-    fileHandler.files.length > 0 &&
-    fileHandler.files.length >= chatState.expectedFileCount &&
-    chatState.documentName;
-
-  // Mobile Header Component
-  const MobileHeader = () => (
-    <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          {currentView !== "chat" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentView("chat")}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
-          <div>
-            <div className="text-xs text-muted-foreground">
-              {chatState.documentName && (
-                <span>{chatState.documentName} • </span>
-              )}
-              {fileHandler.files.length} files •{" "}
-              <span
-                className={
-                  ai.isReady ? "text-status-success" : "text-status-warning"
-                }
-              >
-                {ai.isReady ? "AI Ready" : "Configure AI Service"}
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(true)}
-            className="p-2"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  const status = getStatusInfo();
 
   // Mobile Bottom Navigation
-  const MobileBottomNav = () => (
-    <div className="sticky bottom-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
-      <div className="flex items-center justify-around p-2">
+  const renderBottomNavigation = () => (
+    <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="grid grid-cols-4 gap-1 p-2">
+        {/* Chat Tab */}
         <Button
           variant={currentView === "chat" ? "default" : "ghost"}
           size="sm"
           onClick={() => setCurrentView("chat")}
-          className="flex-1 flex-col gap-1 h-auto py-2"
+          className="flex flex-col gap-1 h-auto py-2"
         >
           <MessageSquare className="w-4 h-4" />
           <span className="text-xs">Chat</span>
+          {status.isProcessing && (
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+          )}
         </Button>
 
+        {/* Files Tab */}
         <Button
-          variant={currentView === "files" ? "default" : "ghost"}
+          variant={
+            ["files", "upload", "url"].includes(currentView)
+              ? "default"
+              : "ghost"
+          }
           size="sm"
           onClick={() => setCurrentView("files")}
-          className="flex-1 flex-col gap-1 h-auto py-2 relative"
+          className="flex flex-col gap-1 h-auto py-2"
         >
           <Files className="w-4 h-4" />
           <span className="text-xs">Files</span>
-          {fileHandler.files.length > 0 && (
-            <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 text-xs flex items-center justify-center">
-              {fileHandler.files.length}
+          {status.fileCount > 0 && (
+            <Badge variant="secondary" className="text-xs h-4 px-1">
+              {status.fileCount}
             </Badge>
           )}
         </Button>
 
+        {/* AI Tools Tab */}
         <Button
-          variant={currentView === "upload" ? "default" : "ghost"}
+          variant={
+            ["analyze", "combine", "pipeline", "ai-chat"].includes(currentView)
+              ? "default"
+              : "ghost"
+          }
           size="sm"
-          onClick={() => setCurrentView("upload")}
-          className="flex-1 flex-col gap-1 h-auto py-2"
+          onClick={() => setCurrentView("analyze")}
+          className="flex flex-col gap-1 h-auto py-2"
         >
-          <Upload className="w-4 h-4" />
-          <span className="text-xs">Upload</span>
+          <Brain className="w-4 h-4" />
+          <span className="text-xs">AI Tools</span>
+          {status.hasInsights && (
+            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+          )}
         </Button>
 
+        {/* Settings Tab */}
         <Button
-          variant={currentView === "url" ? "default" : "ghost"}
+          variant="ghost"
           size="sm"
-          onClick={() => setCurrentView("url")}
-          className="flex-1 flex-col gap-1 h-auto py-2"
+          onClick={() => setShowSettings(!showSettings)}
+          className="flex flex-col gap-1 h-auto py-2"
         >
-          <Globe className="w-4 h-4" />
-          <span className="text-xs">URL</span>
+          <Settings className="w-4 h-4" />
+          <span className="text-xs">Settings</span>
+          {!ai.isReady && (
+            <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+          )}
         </Button>
       </div>
     </div>
   );
 
-  // Chat View Content
-  const ChatViewContent = () => (
+  // Chat View
+  const renderChatView = () => (
     <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold">AI Chat</h1>
+          <Badge variant={ai.isReady ? "default" : "secondary"}>
+            {status.serviceStatus}
+          </Badge>
+        </div>
+        {status.fileCount > 0 && (
+          <Badge variant="outline" className="text-xs">
+            {status.fileCount} files
+          </Badge>
+        )}
+      </div>
+
+      {/* AI Insights Banner */}
+      {enhancedAI.aiInsights.length > 0 && (
+        <Alert className="m-4 mb-0">
+          <Lightbulb className="w-4 h-4" />
+          <AlertDescription>
+            <div className="space-y-1">
+              {enhancedAI.aiInsights.slice(0, 2).map((insight, index) => (
+                <p key={index} className="text-sm">
+                  {insight}
+                </p>
+              ))}
+              {enhancedAI.aiInsights.length > 2 && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setCurrentView("analyze")}
+                >
+                  View all insights →
+                </Button>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4 pb-20">
+        <div className="space-y-4">
           {chatState.messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
-
-          {/* Generated Content */}
-          {chatState.generatedContent && (
-            <GeneratedContent
-              content={chatState.generatedContent}
-              onCondense={ai.condenseContent}
-              documentName={chatState.documentName}
-            />
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      {/* Fixed Generate Button */}
-      {canGenerate && currentView === "chat" && (
-        <div className="absolute bottom-20 left-4 right-4 z-40">
-          <Button
-            onClick={handleGenerateDocument}
-            disabled={chatState.isProcessing}
-            className="w-full bg-chat-primary hover:bg-chat-primary/90 shadow-lg"
-            size="lg"
-          >
-            <FileText className="w-5 h-5 mr-2" />
-            {chatState.isProcessing ? "Generating..." : "Generate Document"}
-          </Button>
-        </div>
-      )}
-
-      {/* Input Area */}
-      <div className="sticky bottom-16 bg-background/95 backdrop-blur p-4 border-t border-border">
-        <div className="flex gap-2">
+      {/* Input */}
+      <div className="p-4 border-t bg-background/95 backdrop-blur">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="flex gap-2"
+        >
           <Input
             ref={inputRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
             placeholder={
               !ai.isReady
-                ? "Configure AI service in settings first..."
-                : chatState.currentStep === "initial"
-                  ? "Tell me the document name and number of files..."
-                  : "Type your message..."
+                ? "Configure AI settings first..."
+                : status.fileCount === 0
+                  ? "Upload files to chat about them..."
+                  : "Ask about your files..."
             }
-            disabled={!ai.isReady || ai.isLoading}
-            className="flex-1 h-12"
+            disabled={!ai.isReady}
+            className="flex-1"
           />
           <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || !ai.isReady || ai.isLoading}
+            type="submit"
             size="icon"
-            className="h-12 w-12"
+            disabled={!inputMessage.trim() || !ai.isReady}
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4" />
           </Button>
-        </div>
-
-        {(ai.error || fileHandler.error) && (
-          <div className="mt-2 text-sm text-status-error">
-            {ai.error || fileHandler.error}
-          </div>
-        )}
+        </form>
       </div>
     </div>
   );
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      <MobileHeader />
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        {currentView === "chat" && <ChatViewContent />}
-
-        {currentView === "files" && (
-          <div className="h-full p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Files</h2>
-              {fileHandler.files.length > 0 && (
-                <Button
-                  onClick={fileHandler.clearAllFiles}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
-              )}
-            </div>
-            <FileList
-              files={fileHandler.files}
-              uploadProgress={fileHandler.uploadProgress}
-              onFileRemove={fileHandler.removeFile}
-              onFileUpdate={fileHandler.updateFile}
-              onFileToggle={fileHandler.toggleFileExpansion}
-            />
-          </div>
-        )}
-
-        {currentView === "upload" && (
-          <div className="h-full p-4">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-2">Upload Files</h2>
-              <div className="flex gap-2 mb-4">
-                <Button
-                  onClick={fileHandler.openFileDialog}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose Files
-                </Button>
-                <Button
-                  onClick={fileHandler.openFolderDialog}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <FolderOpen className="w-4 h-4 mr-2" />
-                  Folder
-                </Button>
-              </div>
-            </div>
-            <FileUploader
-              onFilesAdded={fileHandler.addFiles}
-              onTextAdded={fileHandler.addTextContent}
-              dragOver={fileHandler.dragOver}
-              onDragOver={fileHandler.handleDragOver}
-              onDragLeave={fileHandler.handleDragLeave}
-              onDrop={fileHandler.handleDrop}
-              isProcessing={fileHandler.isProcessing}
-            />
-          </div>
-        )}
-
-        {currentView === "url" && (
-          <div className="h-full p-4">
-            <h2 className="text-lg font-semibold mb-4">Add URL Content</h2>
-            <URLScraper
-              onUrlAdded={fileHandler.addScrapedUrl}
-              isProcessing={fileHandler.isProcessing}
-              onClose={() => setCurrentView("chat")}
-            />
-          </div>
-        )}
+  // Files View with sub-tabs
+  const renderFilesView = () => (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+        <h1 className="text-lg font-semibold">File Manager</h1>
+        <Badge variant="outline">{status.fileCount} files</Badge>
       </div>
 
-      <MobileBottomNav />
+      {/* Sub-tabs */}
+      <Tabs defaultValue="list" className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            List
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Upload
+          </TabsTrigger>
+          <TabsTrigger value="url" className="flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            URL
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Hidden file inputs */}
-      <input
-        ref={fileHandler.fileInputRef}
-        type="file"
-        multiple
-        accept=".md,.mdx,.txt,.js,.ts,.jsx,.tsx,.py,.html,.css,.json,.yml,.yaml,.doc,.docx"
-        onChange={fileHandler.handleFileInputChange}
-        className="hidden"
-      />
-      <input
-        ref={fileHandler.folderInputRef}
-        type="file"
-        /* @ts-ignore */
-        webkitdirectory=""
-        directory=""
-        multiple
-        onChange={fileHandler.handleFileInputChange}
-        className="hidden"
-      />
+        <TabsContent value="list" className="flex-1 mt-4">
+          <FileList
+            files={fileHandler.files}
+            uploadProgress={fileHandler.uploadProgress}
+            onFileRemove={fileHandler.removeFile}
+            onFileUpdate={fileHandler.updateFile}
+            onFileToggle={fileHandler.toggleFileExpansion}
+          />
+        </TabsContent>
 
-      {/* Settings Panel */}
-      <SettingsPanel
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        settings={settings.settings}
-        onUpdateSetting={settings.updateSetting}
-        onResetSettings={settings.resetSettings}
-        onToggleTheme={settings.toggleTheme}
-        ai={ai}
-      />
+        <TabsContent value="upload" className="flex-1 mt-4">
+          <FileUploader
+            onFileDrop={fileHandler.handleDrop}
+            onFileSelect={fileHandler.handleFileInputChange}
+            onFolderSelect={fileHandler.scanFolderContents}
+            dragOver={fileHandler.dragOver}
+            onDragOver={fileHandler.handleDragOver}
+            onDragLeave={fileHandler.handleDragLeave}
+            fileInputRef={fileHandler.fileInputRef}
+            folderInputRef={fileHandler.folderInputRef}
+            isProcessing={fileHandler.isProcessing}
+            onOpenFileDialog={fileHandler.openFileDialog}
+            onOpenFolderDialog={fileHandler.openFolderDialog}
+          />
+        </TabsContent>
+
+        <TabsContent value="url" className="flex-1 mt-4">
+          <URLScraper
+            onUrlAdd={fileHandler.addScrapedUrl}
+            isProcessing={fileHandler.isProcessing}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
+  // AI Tools View with sub-tabs
+  const renderAIToolsView = () => (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+        <h1 className="text-lg font-semibold">AI Tools</h1>
+        <Badge variant={ai.isReady ? "default" : "secondary"}>
+          {ai.selectedService}
+        </Badge>
+      </div>
+
+      {/* Sub-tabs */}
+      <Tabs defaultValue="chat" className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-4 mx-4 mt-4">
+          <TabsTrigger value="chat" className="flex items-center gap-1">
+            <MessageSquare className="w-3 h-3" />
+            <span className="text-xs">Chat</span>
+          </TabsTrigger>
+          <TabsTrigger value="analyze" className="flex items-center gap-1">
+            <Brain className="w-3 h-3" />
+            <span className="text-xs">Analyze</span>
+          </TabsTrigger>
+          <TabsTrigger value="combine" className="flex items-center gap-1">
+            <Combine className="w-3 h-3" />
+            <span className="text-xs">Combine</span>
+          </TabsTrigger>
+          <TabsTrigger value="pipeline" className="flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            <span className="text-xs">Pipeline</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="chat" className="flex-1 mt-4">
+          <div className="px-4">
+            <AIFileChat
+              files={fileHandler.files}
+              onFileSelect={(fileIds) => setSelectedFileForAnalysis(fileIds[0])}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analyze" className="flex-1 mt-4">
+          <div className="px-4">
+            <FileAnalyzer
+              files={fileHandler.files}
+              selectedFileId={selectedFileForAnalysis}
+              onAnalysisComplete={(analysis) => {
+                toast.success("Analysis completed!");
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="combine" className="flex-1 mt-4">
+          <div className="px-4">
+            <FileCombiner
+              files={fileHandler.files}
+              onCombinationComplete={(result) => {
+                toast.success(
+                  `Combined ${result.metadata.filesProcessed} files successfully!`,
+                );
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pipeline" className="flex-1 mt-4">
+          <div className="px-4">
+            <ProcessingPipeline
+              files={fileHandler.files}
+              onPipelineComplete={(pipeline) => {
+                toast.success("Processing pipeline completed!");
+              }}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
+  // Main content renderer
+  const renderMainContent = () => {
+    switch (currentView) {
+      case "chat":
+        return renderChatView();
+      case "files":
+      case "upload":
+      case "url":
+        return renderFilesView();
+      case "analyze":
+      case "combine":
+      case "pipeline":
+      case "ai-chat":
+        return renderAIToolsView();
+      default:
+        return renderChatView();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden">{renderMainContent()}</div>
+
+      {/* Bottom Navigation */}
+      {renderBottomNavigation()}
+
+      {/* Settings Sheet */}
+      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <SettingsPanel onClose={() => setShowSettings(false)} />
+        </SheetContent>
+      </Sheet>
+
+      {/* Processing Status Overlay */}
+      {(fileExtraction.isProcessing || enhancedAI.isLoading) && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="w-80 mx-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fileExtraction.processingStatus.message && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    {fileExtraction.processingStatus.message}
+                  </p>
+                  <Progress
+                    value={fileExtraction.processingStatus.progress}
+                    className="h-2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {fileExtraction.processingStatus.progress}% complete
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
