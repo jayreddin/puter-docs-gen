@@ -431,11 +431,31 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">
-                            Connected to Puter
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm font-medium">
+                              Connected to Puter
+                            </span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await ai.signOutPuter();
+                                setPuterAuthStatus(null);
+                                toast.success(
+                                  "Signed out from Puter successfully",
+                                );
+                              } catch (error) {
+                                toast.error("Failed to sign out from Puter");
+                              }
+                            }}
+                            className="text-xs"
+                          >
+                            Sign Out
+                          </Button>
                         </div>
 
                         {puterAuthStatus && (
