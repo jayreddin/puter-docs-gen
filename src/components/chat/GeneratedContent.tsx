@@ -132,7 +132,9 @@ export function GeneratedContent({
 
         {/* Content */}
         <div className={cn("p-4", !isExpanded && "max-h-96 overflow-hidden")}>
-          <ScrollArea className={cn(isExpanded ? "h-[60vh]" : "h-full")}>
+          <ScrollArea
+            className={cn(isExpanded ? "h-[60vh]" : "h-full", "touch-pan-y")}
+          >
             <div
               className={cn(
                 "font-mono text-sm leading-relaxed",
