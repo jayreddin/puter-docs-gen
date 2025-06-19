@@ -477,67 +477,134 @@ Once you provide this information, you can start uploading files, pasting conten
         />
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="max-w-4xl mx-auto space-y-4">
-            {chatState.messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
+      {/* Main Content Area */}
+      <div className="flex-1 flex">
+        {/* Chat Area */}
+        <div className={cn("flex flex-col", showAITools ? "flex-1" : "w-full")}>
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-4">
+            <div className="max-w-4xl mx-auto space-y-4">
+              {chatState.messages.map((message) => (
+                <MessageBubble key={message.id} message={message} />
+              ))}
 
-            {/* Generated Content */}
-            {chatState.generatedContent && (
-              <GeneratedContent
-                content={chatState.generatedContent}
-                onCondense={ai.condenseContent}
-                documentName={chatState.documentName}
-              />
-            )}
+              {/* Generated Content */}
+              {chatState.generatedContent && (
+                <GeneratedContent
+                  content={chatState.generatedContent}
+                  onCondense={ai.condenseContent}
+                  documentName={chatState.documentName}
+                />
+              )}
 
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-
-        {/* Input Area */}
-        <div className="border-t border-border p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={
-                  !ai.isReady
-                    ? "Configure AI service in settings first..."
-                    : chatState.currentStep === "initial"
-                      ? "Tell me the document name and number of files..."
-                      : "Type your message..."
-                }
-                disabled={!ai.isReady || ai.isLoading}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || !ai.isReady || ai.isLoading}
-                size="icon"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+              <div ref={messagesEndRef} />
             </div>
+          </ScrollArea>
 
-            {ai.error && (
-              <div className="mt-2 text-sm text-status-error">{ai.error}</div>
-            )}
-
-            {fileHandler.error && (
-              <div className="mt-2 text-sm text-status-error">
-                {fileHandler.error}
+          {/* Input Area */}
+          <div className="border-t border-border p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={
+                    !ai.isReady
+                      ? "Configure AI service in settings first..."
+                      : chatState.currentStep === "initial"
+                        ? "Tell me the document name and number of files..."
+                        : "Type your message..."
+                  }
+                  disabled={!ai.isReady || ai.isLoading}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || !ai.isReady || ai.isLoading}
+                  size="icon"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
               </div>
-            )}
+
+              {ai.error && (
+                <div className="mt-2 text-sm text-status-error">{ai.error}</div>
+              )}
+
+              {fileHandler.error && (
+                <div className="mt-2 text-sm text-status-error">
+                  {fileHandler.error}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* AI Tools Panel */}
+        {showAITools && (
+          <div className="w-96 border-l border-border bg-chat-surface flex flex-col">
+            {/* AI Tools Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">AI Tools</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAITools(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus className="w-4 h-4 rotate-45" />
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Tools Content */}
+            <div className="flex-1 min-h-0">
+              <ScrollArea className="h-full p-4">
+                {activeAITool === "chat" && (
+                  <AIFileChat
+                    files={fileHandler.files}
+                    onFileSelect={(fileIds) =>
+                      setSelectedFileForAnalysis(fileIds[0])
+                    }
+                  />
+                )}
+
+                {activeAITool === "analyze" && (
+                  <FileAnalyzer
+                    files={fileHandler.files}
+                    selectedFileId={selectedFileForAnalysis}
+                    onAnalysisComplete={(analysis) => {
+                      toast.success("Analysis completed!");
+                    }}
+                  />
+                )}
+
+                {activeAITool === "combine" && (
+                  <FileCombiner
+                    files={fileHandler.files}
+                    onCombinationComplete={(result) => {
+                      toast.success(
+                        `Combined ${result.metadata.filesProcessed} files successfully!`,
+                      );
+                    }}
+                  />
+                )}
+
+                {activeAITool === "pipeline" && (
+                  <ProcessingPipeline
+                    files={fileHandler.files}
+                    onPipelineComplete={(pipeline) => {
+                      toast.success("Processing pipeline completed!");
+                    }}
+                  />
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Settings Panel */}
