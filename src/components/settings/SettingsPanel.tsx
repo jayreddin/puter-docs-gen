@@ -44,7 +44,6 @@ import {
   X,
   Wifi,
   WifiOff,
-  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProcessingPreferences, AuthStatus } from "@/types";
