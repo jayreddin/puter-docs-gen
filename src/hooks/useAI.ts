@@ -519,13 +519,12 @@ export function useAI() {
    */
   const signOutPuter = useCallback(async () => {
     try {
-      if (window.puter && window.puter.auth) {
-        await window.puter.auth.signOut();
+      const result = await puterService.signOut();
+      if (result) {
         setIsPuterReady(false);
         storage.saveSettings({ isPuterConnected: false });
-        return true;
       }
-      return false;
+      return result;
     } catch (error) {
       console.error("Failed to sign out from Puter:", error);
       throw new Error("Failed to sign out from Puter");
