@@ -46,6 +46,13 @@ export function DesktopChatInterface() {
   const [inputMessage, setInputMessage] = useState("");
   const [showFileUploader, setShowFileUploader] = useState(false);
   const [showURLScraper, setShowURLScraper] = useState(false);
+  const [showAITools, setShowAITools] = useState(false);
+  const [activeAITool, setActiveAITool] = useState<
+    "chat" | "analyze" | "combine" | "pipeline"
+  >("chat");
+  const [selectedFileForAnalysis, setSelectedFileForAnalysis] = useState<
+    string | undefined
+  >();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
