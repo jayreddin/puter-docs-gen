@@ -270,16 +270,23 @@ export function useEnhancedAI() {
       try {
         const insights: string[] = [];
 
-        // Generate general insights
-        const summary = await summarizeFiles(files);
-        insights.push(`📋 **Overview**: ${summary.split(".")[0]}.`);
+        // Always provide basic file analysis (doesn't require AI)
+        const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+        const formatSize = (bytes: number) => {
+          if (bytes === 0) return "0 Bytes";
+          const k = 1024;
+          const sizes = ["Bytes", "KB", "MB"];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return (
+            parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+          );
+        };
 
-        // File count insight
         insights.push(
-          `📁 **Files**: Analyzing ${files.length} file${files.length > 1 ? "s" : ""} totaling ${files.reduce((sum, f) => sum + f.size, 0)} bytes.`,
+          `📁 **Files**: Analyzing ${files.length} file${files.length > 1 ? "s" : ""} totaling ${formatSize(totalSize)}.`,
         );
 
-        // File type distribution
+        // File type distribution (doesn't require AI)
         const typeDistribution = files.reduce(
           (acc, file) => {
             acc[file.type] = (acc[file.type] || 0) + 1;
@@ -293,23 +300,96 @@ export function useEnhancedAI() {
           .join(", ");
         insights.push(`📊 **Types**: ${typeList} files detected.`);
 
-        // Identify relationships if multiple files
-        if (files.length > 1) {
-          const relationships = await identifyFileRelationships(files);
-          if (relationships.length > 0) {
+        // Try to generate AI-powered insights with fallbacks
+        try {
+          const summary = await summarizeFiles(files);
+          if (summary && summary.length > 0) {
+            const firstSentence = summary.split(".")[0];
+            if (firstSentence.length > 10) {
+              insights.push(`📋 **Overview**: ${firstSentence}.`);
+            }
+          }
+        } catch (summaryError) {
+          console.warn(
+            "Failed to generate summary, using fallback:",
+            summaryError,
+          );
+          // Provide a basic content overview
+          const avgSize = totalSize / files.length;
+          if (avgSize > 10000) {
             insights.push(
-              `🔗 **Connections**: Found ${relationships.length} relationship${relationships.length > 1 ? "s" : ""} between files.`,
+              `📋 **Overview**: Large documents detected with substantial content.`,
+            );
+          } else if (avgSize < 1000) {
+            insights.push(
+              `📋 **Overview**: Small files detected, likely snippets or notes.`,
+            );
+          } else {
+            insights.push(
+              `📋 **Overview**: Medium-sized documents ready for analysis.`,
             );
           }
+        }
+
+        // Try to identify relationships if multiple files
+        if (files.length > 1) {
+          try {
+            const relationships = await identifyFileRelationships(files);
+            if (relationships.length > 0) {
+              insights.push(
+                `🔗 **Connections**: Found ${relationships.length} relationship${relationships.length > 1 ? "s" : ""} between files.`,
+              );
+            } else {
+              insights.push(
+                `🔗 **Connections**: Files appear to be independent documents.`,
+              );
+            }
+          } catch (relationshipError) {
+            console.warn(
+              "Failed to analyze relationships, using fallback:",
+              relationshipError,
+            );
+            // Provide basic relationship insight based on file names/types
+            const sameTypeFiles = Object.values(typeDistribution).some(
+              (count) => count > 1,
+            );
+            if (sameTypeFiles) {
+              insights.push(
+                `🔗 **Connections**: Multiple files of similar types detected.`,
+              );
+            } else {
+              insights.push(
+                `🔗 **Connections**: Diverse file types suggest varied content.`,
+              );
+            }
+          }
+        }
+
+        // Add action suggestions
+        if (files.length > 1) {
+          insights.push(
+            `💡 **Suggestions**: Try combining files or analyzing relationships between documents.`,
+          );
+        } else {
+          insights.push(
+            `💡 **Suggestions**: Upload more files to compare and analyze relationships.`,
+          );
         }
 
         setAiInsights(insights);
         return insights;
       } catch (error) {
         console.error("Failed to generate insights:", error);
-        return [
-          "⚠️ **Analysis**: Unable to generate detailed insights at this time.",
+
+        // Fallback to basic insights even if everything fails
+        const fallbackInsights = [
+          `📁 **Files**: ${files.length} file${files.length > 1 ? "s" : ""} available for analysis.`,
+          `⚠️ **Status**: AI analysis temporarily unavailable. Basic file information shown.`,
+          `💡 **Tip**: Try refreshing the page or checking your connection.`,
         ];
+
+        setAiInsights(fallbackInsights);
+        return fallbackInsights;
       }
     },
     [isReady, summarizeFiles, identifyFileRelationships],
