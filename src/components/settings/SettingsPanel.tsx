@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Key,
@@ -39,9 +41,16 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  Settings,
+  Brain,
+  Zap,
+  Shield,
+  Users,
+  Activity,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AppSettings } from "@/types";
+import { AppSettings, ProcessingPreferences, AuthStatus } from "@/types";
 import { useAI } from "@/hooks/useAI";
 import { PuterDebugInfo } from "@/components/debug/PuterDebugInfo";
 import { PuterAuthPrompt } from "@/components/puter/PuterAuthPrompt";
