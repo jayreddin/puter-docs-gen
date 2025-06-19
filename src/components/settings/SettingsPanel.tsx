@@ -75,7 +75,7 @@ export function SettingsPanel({
   onUpdateSetting,
   onResetSettings,
   onToggleTheme,
-  ai: externalAI,
+  ai: externalAI
 }: SettingsPanelProps) {
   const hookAI = useAI();
   const hookSettings = useSettings();
@@ -105,9 +105,7 @@ export function SettingsPanel({
       preserveFormatting: true,
     },
   );
-  const [pendingService, setPendingService] = useState<"gemini" | "puter">(
-    ai.selectedService,
-  );
+  const [pendingService, setPendingService] = useState<"gemini" | "puter">(ai.selectedService);
   const [pendingModel, setPendingModel] = useState(ai.currentModel);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -184,9 +182,7 @@ export function SettingsPanel({
       updateSetting("processingPreferences", processingPrefs);
 
       setHasUnsavedChanges(false);
-      toast.success(
-        `Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`,
-      );
+      toast.success(`Settings saved! Now using ${pendingService === "puter" ? "Puter AI" : "Gemini AI"} with ${pendingModel}`);
     } catch (error) {
       toast.error("Failed to save settings");
       console.error("Save settings error:", error);
@@ -196,16 +192,14 @@ export function SettingsPanel({
   const handleDiscardChanges = () => {
     setPendingService(ai.selectedService);
     setPendingModel(ai.currentModel);
-    setProcessingPrefs(
-      settings.processingPreferences || {
-        autoExtractText: true,
-        autoAnalyzeFiles: true,
-        combinationStrategy: "smart",
-        outputFormat: "markdown",
-        includeMetadata: true,
-        preserveFormatting: true,
-      },
-    );
+    setProcessingPrefs(settings.processingPreferences || {
+      autoExtractText: true,
+      autoAnalyzeFiles: true,
+      combinationStrategy: "smart",
+      outputFormat: "markdown",
+      includeMetadata: true,
+      preserveFormatting: true,
+    });
     setHasUnsavedChanges(false);
     toast.info("Changes discarded");
   };
@@ -233,24 +227,15 @@ export function SettingsPanel({
       toast.success("Connected to Puter successfully!");
     } catch (error) {
       console.error("Puter connection failed:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to connect to Puter";
+      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Puter";
 
       // Provide more helpful error messages
-      if (
-        errorMessage.includes("Sign-in was attempted but verification failed")
-      ) {
-        toast.error(
-          "Sign-in failed. Please try closing any pop-ups and try again.",
-        );
+      if (errorMessage.includes("Sign-in was attempted but verification failed")) {
+        toast.error("Sign-in failed. Please try closing any pop-ups and try again.");
       } else if (errorMessage.includes("User not signed in")) {
-        toast.error(
-          "Please complete the sign-in process in the pop-up window.",
-        );
+        toast.error("Please complete the sign-in process in the pop-up window.");
       } else if (errorMessage.includes("SDK failed to load")) {
-        toast.error(
-          "Puter service unavailable. Please check your internet connection and refresh the page.",
-        );
+        toast.error("Puter service unavailable. Please check your internet connection and refresh the page.");
       } else {
         toast.error(errorMessage);
       }
@@ -333,9 +318,7 @@ export function SettingsPanel({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm font-medium">
-                    You have unsaved changes
-                  </span>
+                  <span className="text-sm font-medium">You have unsaved changes</span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -361,10 +344,7 @@ export function SettingsPanel({
 
           <Tabs defaultValue="services" className="w-full">
             <TabsList className="grid w-full grid-cols-4 h-12 touch-manipulation">
-              <TabsTrigger
-                value="services"
-                className="flex items-center gap-2 h-10 touch-manipulation"
-              >
+              <TabsTrigger value="services" className="flex items-center gap-2 h-10 touch-manipulation">
                 <Brain className="w-4 h-4" />
                 <span className="hidden sm:inline">AI & Models</span>
                 <span className="sm:hidden">AI</span>
@@ -385,10 +365,7 @@ export function SettingsPanel({
                 <span className="hidden sm:inline">Appearance</span>
                 <span className="sm:hidden">Theme</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="data"
-                className="flex items-center gap-2 h-10 touch-manipulation"
-              >
+              <TabsTrigger value="data" className="flex items-center gap-2 h-10 touch-manipulation">
                 <Database className="w-4 h-4" />
                 <span className="hidden sm:inline">Data & Export</span>
                 <span className="sm:hidden">Data</span>
@@ -448,15 +425,12 @@ export function SettingsPanel({
                       <span className="text-sm font-medium">
                         Service Status
                       </span>
-                      <Badge
-                        variant={ai.isReady ? "default" : "secondary"}
-                        className="px-3 py-1"
-                      >
-                        {ai.isReady ? "Ready" : "Not Ready"}
+                      <Badge variant={(pendingService === "gemini" ? ai.isGeminiReady : ai.isPuterReady) ? "default" : "secondary"} className="px-3 py-1">
+                        {(pendingService === "gemini" ? ai.isGeminiReady : ai.isPuterReady) ? "Ready" : "Not Ready"}
                       </Badge>
                     </div>
 
-                    {ai.selectedService === "puter" && puterAuthStatus && (
+                    {pendingService === "puter" && puterAuthStatus && (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center gap-2">
                           {getConnectionQualityIcon(
@@ -481,7 +455,7 @@ export function SettingsPanel({
               </Card>
 
               {/* Gemini API Configuration */}
-              {ai.selectedService === "gemini" && (
+              {pendingService === "gemini" && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -543,7 +517,7 @@ export function SettingsPanel({
               )}
 
               {/* Puter Authentication */}
-              {ai.selectedService === "puter" && (
+              {pendingService === "puter" && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -563,14 +537,12 @@ export function SettingsPanel({
                           disabled={ai.isLoading || isTestingKey}
                           className="w-full flex items-center gap-2 touch-manipulation h-10"
                         >
-                          {ai.isLoading || isTestingKey ? (
+                          {(ai.isLoading || isTestingKey) ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Shield className="w-4 h-4" />
                           )}
-                          {ai.isLoading || isTestingKey
-                            ? "Connecting..."
-                            : "Connect to Puter"}
+                          {(ai.isLoading || isTestingKey) ? "Connecting..." : "Connect to Puter"}
                         </Button>
                       </div>
                     ) : (
@@ -589,9 +561,7 @@ export function SettingsPanel({
                               try {
                                 await ai.signOutPuter();
                                 setPuterAuthStatus(null);
-                                toast.success(
-                                  "Signed out from Puter successfully",
-                                );
+                                toast.success("Signed out from Puter successfully");
                               } catch (error) {
                                 toast.error("Failed to sign out from Puter");
                               }
@@ -762,9 +732,9 @@ export function SettingsPanel({
                   <div>
                     <Label>File combination strategy</Label>
                     <Select
-                      value={processingPrefs.combinationStrategy}
-                      onValueChange={(
-                        value: "smart" | "chronological" | "manual",
+                      value={pendingService}
+                      onValueChange={handleServiceChange}
+                    >
                       ) =>
                         handleProcessingPrefChange("combinationStrategy", value)
                       }
@@ -894,15 +864,15 @@ export function SettingsPanel({
                         This will reset all settings to their default values
                       </p>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (resetConfirm) {
-                          resetSettings();
-                          setResetConfirm(false);
-                          toast.success("Settings reset successfully");
-                        } else {
+                    <Select
+                      value={pendingModel}
+                      onValueChange={handleModelChange}
+                    >
+                      <SelectTrigger className="h-10 touch-manipulation">
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(pendingService === "gemini" ? ai.availableModels : ai.availablePuterModels).map((model) => (
                           setResetConfirm(true);
                           setTimeout(() => setResetConfirm(false), 3000);
                         }
@@ -927,7 +897,7 @@ export function SettingsPanel({
               </Card>
 
               {/* Debug Information */}
-              {ai.selectedService === "puter" && (
+              {pendingService === "puter" && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -989,9 +959,11 @@ export function SettingsPanel({
   if (isOpen !== undefined) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl h-[90vh] p-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden">
           <DialogTitle className="sr-only">Settings</DialogTitle>
-          {panelContent}
+          <div className="flex flex-col h-full max-h-[90vh]">
+            {panelContent}
+          </div>
         </DialogContent>
       </Dialog>
     );
