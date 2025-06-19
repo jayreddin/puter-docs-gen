@@ -55,10 +55,6 @@ export function useAI() {
         }
       }
     }
-      if (settings.selectedService === "puter" && settings.selectedModel) {
-        setCurrentModel(settings.selectedModel);
-      }
-    }
   }, []);
 
   const loadPuterModels = useCallback(async () => {
