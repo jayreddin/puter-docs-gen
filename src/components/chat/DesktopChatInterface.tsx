@@ -21,6 +21,7 @@ import { ChatMessage, ChatState } from "@/types";
 import { useAI } from "@/hooks/useAI";
 import { useFileHandler } from "@/hooks/useFileHandler";
 import { useSettings } from "@/hooks/useSettings";
+import { toast } from "sonner";
 import { MessageBubble } from "./MessageBubble";
 import { GeneratedContent } from "./GeneratedContent";
 import { FileList } from "@/components/file-handler/FileList";
