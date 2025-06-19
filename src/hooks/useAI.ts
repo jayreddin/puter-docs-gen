@@ -115,17 +115,9 @@ export function useAI() {
         );
       }
 
-      // Perform health check
-      const healthCheck = await puterService.healthCheck();
-      console.log("Puter health check:", healthCheck);
+      console.log("Puter SDK loaded, checking sign-in status...");
 
-      if (!healthCheck.healthy) {
-        throw new Error(`Puter service not ready: ${healthCheck.message}`);
-      }
-
-      console.log("Puter service is healthy, checking sign-in status...");
-
-      // Check if user is signed in
+      // Check if user is signed in first
       const isSignedIn = await puterService.isSignedIn();
       console.log("Puter sign-in status:", isSignedIn);
 
@@ -134,6 +126,23 @@ export function useAI() {
         // Try to sign in
         await puterService.signIn();
         console.log("Sign-in completed");
+
+        // Verify sign-in was successful
+        const signInVerified = await puterService.isSignedIn();
+        if (!signInVerified) {
+          throw new Error(
+            "Sign-in was attempted but verification failed. Please try again.",
+          );
+        }
+        console.log("Sign-in verified successfully");
+      }
+
+      // Now perform health check after ensuring user is signed in
+      const healthCheck = await puterService.healthCheck();
+      console.log("Puter health check:", healthCheck);
+
+      if (!healthCheck.healthy) {
+        throw new Error(`Puter service not ready: ${healthCheck.message}`);
       }
 
       console.log("Testing Puter connection...");
