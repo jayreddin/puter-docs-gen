@@ -375,6 +375,129 @@ export function useAI() {
       : availablePuterModels;
   }, [selectedService, availableModels, availablePuterModels]);
 
+  /**
+   * Get current authentication status for Puter
+   */
+  const getPuterAuthStatus = useCallback(async () => {
+    if (selectedService !== "puter" || !puterService.isAvailable()) {
+      return null;
+    }
+
+    try {
+      return await puterService.getAuthStatus();
+    } catch (error) {
+      console.error("Failed to get Puter auth status:", error);
+      return null;
+    }
+  }, [selectedService]);
+
+  /**
+   * Enhanced file processing with progress
+   */
+  const processFilesWithProgress = useCallback(
+    async (
+      files: Array<{ name: string; content: string }>,
+      documentName: string,
+      onProgress?: (progress: number) => void,
+    ): Promise<string> => {
+      const isReady =
+        selectedService === "gemini" ? isGeminiReady : isPuterReady;
+
+      if (!isReady) {
+        throw new Error("AI service not ready");
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        if (onProgress) onProgress(0);
+
+        let response: string;
+
+        if (selectedService === "gemini") {
+          if (onProgress) onProgress(50);
+          response = await geminiService.processFilesForCompilation(
+            files,
+            documentName,
+          );
+        } else {
+          if (onProgress) onProgress(30);
+          response = await puterService.processFilesForCompilation(
+            files,
+            documentName,
+            currentModel,
+          );
+        }
+
+        if (onProgress) onProgress(100);
+        return response;
+      } catch (err) {
+        const errorMessage = "Failed to process files";
+        setError(errorMessage);
+        console.error("Process files error:", err);
+        throw new Error(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [selectedService, isGeminiReady, isPuterReady, currentModel],
+  );
+
+  /**
+   * Enhanced user message handling with file context
+   */
+  const handleUserMessageWithFiles = useCallback(
+    async (
+      message: string,
+      files?: Array<{ name: string; content: string }>,
+      context?: string,
+    ): Promise<string> => {
+      let enhancedContext = context || "";
+
+      // Add file context if files are provided
+      if (files && files.length > 0) {
+        const fileContext = files
+          .map(
+            (file) =>
+              `**${file.name}**:\n${file.content.substring(0, 1000)}${file.content.length > 1000 ? "..." : ""}`,
+          )
+          .join("\n\n");
+
+        enhancedContext = fileContext + (context ? `\n\n${context}` : "");
+      }
+
+      if (selectedService === "gemini") {
+        return generateResponse(
+          enhancedContext ? `${enhancedContext}\n\n${message}` : message,
+        );
+      } else {
+        return puterService.handleUserMessage(
+          message,
+          enhancedContext,
+          currentModel,
+        );
+      }
+    },
+    [selectedService, currentModel, generateResponse],
+  );
+
+  /**
+   * Check service connection health
+   */
+  const checkServiceHealth = useCallback(async () => {
+    if (selectedService === "gemini") {
+      return isGeminiReady;
+    } else {
+      try {
+        const healthCheck = await puterService.healthCheck();
+        return healthCheck.healthy;
+      } catch (error) {
+        return false;
+      }
+    }
+  }, [selectedService, isGeminiReady]);
+
   const isReady = selectedService === "gemini" ? isGeminiReady : isPuterReady;
 
   return {
@@ -398,6 +521,13 @@ export function useAI() {
     handleUserMessage,
     clearError,
     getAvailableModelsForCurrentService,
+
+    // Enhanced features
+    getPuterAuthStatus,
+    processFilesWithProgress,
+    handleUserMessageWithFiles,
+    checkServiceHealth,
+
     // Puter-specific features
     puterService,
   };
