@@ -984,4 +984,21 @@ export function SettingsPanel({
       )}
     </div>
   );
+
+  // If isOpen prop is provided, wrap in Dialog
+  if (isOpen !== undefined) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl h-[90vh] p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Settings</DialogTitle>
+          </DialogHeader>
+          {panelContent}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise return panel content directly
+  return panelContent;
 }
