@@ -582,48 +582,58 @@ What would you like to do first?`,
         </TabsList>
 
         <TabsContent value="chat" className="flex-1 mt-4">
-          <div className="px-4">
-            <AIFileChat
-              files={fileHandler.files}
-              onFileSelect={(fileIds) => setSelectedFileForAnalysis(fileIds[0])}
-            />
-          </div>
+          <ScrollArea className="h-full touch-pan-y">
+            <div className="px-4 pb-4" style={{ touchAction: "pan-y" }}>
+              <AIFileChat
+                files={fileHandler.files}
+                onFileSelect={(fileIds) =>
+                  setSelectedFileForAnalysis(fileIds[0])
+                }
+              />
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="analyze" className="flex-1 mt-4">
-          <div className="px-4">
-            <FileAnalyzer
-              files={fileHandler.files}
-              selectedFileId={selectedFileForAnalysis}
-              onAnalysisComplete={(analysis) => {
-                toast.success("Analysis completed!");
-              }}
-            />
-          </div>
+          <ScrollArea className="h-full touch-pan-y">
+            <div className="px-4 pb-4" style={{ touchAction: "pan-y" }}>
+              <FileAnalyzer
+                files={fileHandler.files}
+                selectedFileId={selectedFileForAnalysis}
+                onAnalysisComplete={(analysis) => {
+                  toast.success("Analysis completed!");
+                }}
+              />
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="combine" className="flex-1 mt-4">
-          <div className="px-4">
-            <FileCombiner
-              files={fileHandler.files}
-              onCombinationComplete={(result) => {
-                toast.success(
-                  `Combined ${result.metadata.filesProcessed} files successfully!`,
-                );
-              }}
-            />
-          </div>
+          <ScrollArea className="h-full touch-pan-y">
+            <div className="px-4 pb-4" style={{ touchAction: "pan-y" }}>
+              <FileCombiner
+                files={fileHandler.files}
+                onCombinationComplete={(result) => {
+                  toast.success(
+                    `Combined ${result.metadata.filesProcessed} files successfully!`,
+                  );
+                }}
+              />
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="pipeline" className="flex-1 mt-4">
-          <div className="px-4">
-            <ProcessingPipeline
-              files={fileHandler.files}
-              onPipelineComplete={(pipeline) => {
-                toast.success("Processing pipeline completed!");
-              }}
-            />
-          </div>
+          <ScrollArea className="h-full touch-pan-y">
+            <div className="px-4 pb-4" style={{ touchAction: "pan-y" }}>
+              <ProcessingPipeline
+                files={fileHandler.files}
+                onPipelineComplete={(pipeline) => {
+                  toast.success("Processing pipeline completed!");
+                }}
+              />
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </div>
