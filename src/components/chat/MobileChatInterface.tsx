@@ -446,8 +446,8 @@ What would you like to do first?`,
         )}
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 p-4 touch-pan-y">
+          <div className="space-y-4" style={{ touchAction: "pan-y" }}>
             {chatState.messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
@@ -651,7 +651,7 @@ What would you like to do first?`,
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">{renderMainContent()}</div>
+      <div className="flex-1 min-h-0">{renderMainContent()}</div>
 
       {/* Bottom Navigation */}
       {renderBottomNavigation()}
