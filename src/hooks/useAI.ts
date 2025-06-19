@@ -107,14 +107,15 @@ export function useAI() {
         );
       }
 
-      if (!puterService.isAvailable()) {
-        console.error("Puter service not available");
-        throw new Error(
-          "Puter service not available. Please reload the page to load Puter SDK.",
-        );
+      // Perform health check
+      const healthCheck = await puterService.healthCheck();
+      console.log("Puter health check:", healthCheck);
+
+      if (!healthCheck.healthy) {
+        throw new Error(`Puter service not ready: ${healthCheck.message}`);
       }
 
-      console.log("Puter service is available, checking sign-in status...");
+      console.log("Puter service is healthy, checking sign-in status...");
 
       // Check if user is signed in
       const isSignedIn = await puterService.isSignedIn();
