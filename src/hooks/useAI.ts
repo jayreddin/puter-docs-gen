@@ -130,21 +130,32 @@ export function useAI() {
 
       console.log("Testing Puter connection...");
 
-      // Test connection
-      const isConnected = await puterService.testConnection();
-      console.log("Connection test result:", isConnected);
+      // Test connection with better error handling
+      try {
+        const isConnected = await puterService.testConnection();
+        console.log("Connection test result:", isConnected);
 
-      if (isConnected) {
-        setIsPuterReady(true);
-        await loadPuterModels();
-        storage.saveSettings({ isPuterConnected: true });
-        console.log("Puter connection successful");
-      } else {
+        if (isConnected) {
+          setIsPuterReady(true);
+          await loadPuterModels();
+          storage.saveSettings({ isPuterConnected: true });
+          console.log("Puter connection successful");
+        } else {
+          setIsPuterReady(false);
+          setError(
+            "Failed to connect to Puter AI services. Please check your internet connection and try again.",
+          );
+          storage.saveSettings({ isPuterConnected: false });
+        }
+      } catch (connectionError) {
         setIsPuterReady(false);
-        setError(
-          "Failed to connect to Puter AI services. The service may be temporarily unavailable.",
-        );
+        const connectionErrorMessage =
+          connectionError instanceof Error
+            ? connectionError.message
+            : "Failed to connect to Puter AI services.";
+        setError(connectionErrorMessage);
         storage.saveSettings({ isPuterConnected: false });
+        console.error("Connection test threw error:", connectionError);
       }
     } catch (err) {
       setIsPuterReady(false);

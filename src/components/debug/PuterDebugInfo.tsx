@@ -17,6 +17,7 @@ export function PuterDebugInfo() {
       puterModules: {},
       serviceReady: puterService.isAvailable(),
       healthCheck: null,
+      authTest: null,
       connectionTest: null,
       authCheck: null,
       modelCheck: null,
@@ -39,6 +40,16 @@ export function PuterDebugInfo() {
       } catch (error) {
         info.healthCheck = {
           healthy: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+
+      // Auth test
+      try {
+        info.authTest = await puterService.testAuth();
+      } catch (error) {
+        info.authTest = {
+          authenticated: false,
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
@@ -143,8 +154,12 @@ export function PuterDebugInfo() {
               status={debugInfo.healthCheck?.healthy}
               label="Health Check"
             />
+            <StatusBadge
+              status={debugInfo.authTest?.authenticated}
+              label="Auth Test"
+            />
             <StatusBadge status={debugInfo.connectionTest} label="Connection" />
-            <StatusBadge status={debugInfo.authCheck} label="Auth" />
+            <StatusBadge status={debugInfo.authCheck} label="Auth Status" />
           </div>
 
           <div className="text-sm space-y-2">
@@ -177,6 +192,14 @@ export function PuterDebugInfo() {
                 <strong>Health Check:</strong>{" "}
                 {debugInfo.healthCheck.message ||
                   JSON.stringify(debugInfo.healthCheck)}
+              </div>
+            )}
+
+            {debugInfo.authTest && (
+              <div>
+                <strong>Auth Test:</strong>{" "}
+                {debugInfo.authTest.message ||
+                  JSON.stringify(debugInfo.authTest)}
               </div>
             )}
 
